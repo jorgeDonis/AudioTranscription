@@ -1,11 +1,27 @@
-#DEPENDENCIES
+# Copyright (C) 2020 JORGE DONIS DEL ÁLAMO
 
-from google.colab import drive
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+
+#This class is used to access the MTD dataset.
 
 import os
 import glob
 import json
 import PIL
+import subprocess
 
 import IPython.display as ipd
 import numpy as np
@@ -15,40 +31,14 @@ import librosa
 import librosa.display
 from matplotlib import pyplot as plt
 from matplotlib import patches
-# %matplotlib inline
 
 import matplotlib.pyplot as plt
-import collections
-
-import sklearn
-from sklearn.model_selection import train_test_split
-from sklearn import metrics
-from sklearn.model_selection import StratifiedKFold
-
-import tensorflow as tf
-import tensorflow_datasets as tfds
-
-from tensorflow import keras
-from tensorflow.keras.preprocessing.image import array_to_img, img_to_array, load_img
-from tensorflow.keras.models import Sequential
-from tensorflow.keras import layers
-
-from scipy.stats import wilcoxon
-import warnings
-
-warnings.filterwarnings('ignore')
-
-#FILES
-
-drive.mount('/content/drive')
-
-#DATASET DEFINITIONS
 
 class MTDSample:
 
   ##todo save: image (log and no log), frequency matrix
 
-  BASE_DATASET_PATH = 'drive/My Drive/TFG/MTD'
+  BASE_DATASET_PATH = './MTD'
   SPECTROGRAM_DISPLAY_HOP_LENGTH = 512
   WIN_LENGTH = 2048
   TEMP_IMG_FILENAME = "TMP_IMAGE.png"
@@ -76,13 +66,12 @@ class MTDSample:
     return open(self.score_humdrum, 'r').read()
 
   def get_file(self, fn):
-      # print(F"Looking for file: {fn}")
       files = glob.glob(fn)
       assert len(files) == 1, '{} does not exist.'.format(fn)
       return files[0]
 
   def get_spectrogram_db(self):
-    audio_time_series, achieved_sampling_rate = librosa.load(self.wav, mono=True)
+    audio_time_series = librosa.load(self.wav, mono=True)
     X = librosa.stft(audio_time_series, hop_length=MTDSample.SPECTROGRAM_DISPLAY_HOP_LENGTH, win_length=MTDSample.WIN_LENGTH)
     D = librosa.amplitude_to_db(np.abs(X), ref=np.max)
     return D
@@ -99,9 +88,9 @@ class MTDSample:
     filename += "png"
     self.spectogram_img = filename
     pil_image.save(filename)
-    !rm {self.TEMP_IMG_FILENAME}
+    subprocess.run(["rm", self.TEMP_IMG_FILENAME])
 
 sample = MTDSample(1127)
 
-sample.save_spectogram_into_dataset()
-sample.get_humdrum()
+# sample.save_spectogram_into_dataset()
+# sample.get_humdrum()

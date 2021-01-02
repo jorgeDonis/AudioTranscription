@@ -1,0 +1,30 @@
+**kern
+*staff1
+*I"P1
+=1-
+!!pagebreak:original
+*clefG2
+*k[f#c#g#]
+*met(c)
+*M4/4
+4r
+4f#/
+4cc#\
+4r
+=2
+8r
+16f#/LL
+16g#/JJ
+8a#/L
+8b/J
+*^
+4cc#/	8r
+.	16c#/LL
+.	16d/JJ
+4r	8e/L
+.	8f#/J
+*v	*v
+=3
+4gn/
+=
+*-

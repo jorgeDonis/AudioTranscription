@@ -1,0 +1,17 @@
+**kern
+*staff1
+!!pagebreak:original
+*I"P1
+*clefG2
+*k[b-e-a-]
+*met(c)
+*M4/4
+4cc\
+=1
+2gg\
+4ff#\
+4gg\
+=2
+2.ee-\
+4dd\
+*-

@@ -1,0 +1,40 @@
+**kern
+*staff1
+!!pagebreak:original
+*I"P1
+=1-
+*clefG2
+*k[b-]
+*met(c)
+*M4/4
+2ff\
+2ee\
+=2
+*^
+8ff\L	4ff/
+8cc\	.
+*v	*v
+8ccc\
+8ccc\J
+8ccc\L
+8ee\
+8ee\
+8ff\J
+=3
+2gg\
+[2ff#\
+=4
+*^
+8gg\L	4gg/
+8dd\	.
+*v	*v
+8ddd\
+8ddd\J
+8ddd\L
+8ff#\]
+8ff#\
+8gg\J
+=5
+2aa\
+=
+*-

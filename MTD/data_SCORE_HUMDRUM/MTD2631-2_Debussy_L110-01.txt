@@ -1,0 +1,14 @@
+**kern
+*staff1
+*I"P1
+=1-
+!!pagebreak:original
+*clefG2
+*k[b-e-a-d-g-]
+*M4/8
+4r
+4a-/
+=2
+4f/
+4e-/
+*-

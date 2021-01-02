@@ -1,0 +1,34 @@
+**kern
+*staff1
+*I"P1
+=1-
+!!pagebreak:original
+*clefG2
+*k[b-]
+*met(c)
+*M4/4
+[4gg\
+32gg\LLL]
+32ff\
+32ee-\
+32dd\JJ
+32cc\LL
+32b-\
+32a\
+64b-\L
+64g\JJJJ
+*^
+8g\L	4cc/
+[8f#\J	.
+*v	*v
+32f#/LLL]
+32en/
+32d/
+32e/JJ
+32f#/LL
+32g/
+64a/L
+64b-/
+64cc/
+64b-/JJJJ
+*-

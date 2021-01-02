@@ -1,0 +1,34 @@
+**kern
+*staff1
+*I"P1
+!!pagebreak:original
+*clefG2
+*k[b-e-a-d-g-c-]
+*M2/4
+4An/
+=1
+4.f/
+8en/
+=2
+*^
+2e-\	8r
+.	ddnq/
+*v	*v
+8ee-\L
+*^
+.	ccnq/
+*v	*v
+8dd-\
+*^
+.	ddnq/
+*v	*v
+8ee-\J
+=3
+8r
+ddnq/
+8ee-\L
+ccnq/
+8dd-\
+ddnq/
+8ee-\J
+*-

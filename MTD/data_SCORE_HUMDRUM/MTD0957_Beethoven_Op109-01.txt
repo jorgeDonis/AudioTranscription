@@ -1,0 +1,29 @@
+**kern
+*staff1
+!!pagebreak:original
+*I"P1
+*clefG2
+*k[f#c#g#d#]
+*M2/4
+*^
+4g#/	16g#\LK
+.	8.b\J
+=1	=1
+4b/	16b\LK
+.	8.f#\J
+4e/	16e\LK
+.	8.g#\J
+=2	=2
+4g#/	16g#\LK
+.	8.d#\J
+4c#/	16c#\LK
+.	8.e\J
+=3	=3
+4e/	16e\LK
+.	8.B\J
+4ryy	4f#/
+=4	=4
+2ryy	4g#/
+*v	*v
+=
+*-

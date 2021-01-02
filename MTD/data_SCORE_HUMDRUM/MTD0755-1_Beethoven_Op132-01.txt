@@ -1,0 +1,15 @@
+**kern
+*staff1
+*I"P1
+=1-
+!!pagebreak:original
+*clefF4
+*k[]
+*met(c|)
+*M2/2
+2GG#/
+2AA/
+=2
+2F\
+2E\
+*-
