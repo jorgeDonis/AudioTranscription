@@ -71,7 +71,7 @@ class MTDSample:
       return files[0]
 
   def get_spectrogram_db(self):
-    audio_time_series = librosa.load(self.wav, mono=True)
+    audio_time_series, achieved_sample_rate = librosa.load(self.wav, mono=True)
     X = librosa.stft(audio_time_series, hop_length=MTDSample.SPECTROGRAM_DISPLAY_HOP_LENGTH, win_length=MTDSample.WIN_LENGTH)
     D = librosa.amplitude_to_db(np.abs(X), ref=np.max)
     return D
@@ -93,4 +93,5 @@ class MTDSample:
 sample = MTDSample(1127)
 
 # sample.save_spectogram_into_dataset()
-# sample.get_humdrum()
+# print(sample.get_humdrum())
+print(sample.get_spectrogram_db())
