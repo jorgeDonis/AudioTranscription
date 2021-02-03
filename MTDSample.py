@@ -42,8 +42,8 @@ class MTDSample:
   SPECTROGRAM_DISPLAY_HOP_LENGTH = 512
   WIN_LENGTH = 2048
   TEMP_IMG_FILENAME = "TMP_IMAGE.png"
-  IMG_WIDTH = 334
-  IMG_HEIGHT = 217
+  IMG_WIDTH_PER_FRAME = 2
+  IMG_HEIGHT = 512
 
   def __init__(self, id):
     self.id = id
@@ -78,11 +78,12 @@ class MTDSample:
 
   def save_spectogram_into_dataset(self):
     plt.axis('off')
-    img = librosa.display.specshow(self.get_spectrogram_db(), x_axis='s',
+    D = self.get_spectrogram_db()
+    img = librosa.display.specshow(D, x_axis='linear',
                              hop_length=MTDSample.SPECTROGRAM_DISPLAY_HOP_LENGTH, y_axis='log')
     img.figure.savefig(self.TEMP_IMG_FILENAME, bbox_inches='tight', pad_inches=0)
     pil_image = PIL.Image.open(self.TEMP_IMG_FILENAME)
-    pil_image = pil_image.resize((self.IMG_WIDTH, self.IMG_HEIGHT), resample=PIL.Image.LANCZOS)
+    pil_image = pil_image.resize((D.shape[1] * self.IMG_WIDTH_PER_FRAME, self.IMG_HEIGHT), resample=PIL.Image.LANCZOS)
     filename = self.wav[:-3]
     filename = filename.replace('data_AUDIO', 'data_AUDIO_IMG')
     filename += "png"
@@ -90,8 +91,12 @@ class MTDSample:
     pil_image.save(filename)
     subprocess.run(["rm", self.TEMP_IMG_FILENAME])
 
-sample = MTDSample(1127)
+sample = MTDSample('0429')
+sample.save_spectogram_into_dataset()
+print(sample.get_spectrogram_db().shape)
+subprocess.run(["identify", sample.spectogram_img])
 
-# sample.save_spectogram_into_dataset()
-# print(sample.get_humdrum())
-print(sample.get_spectrogram_db())
+sample = MTDSample('0436')
+sample.save_spectogram_into_dataset()
+print(sample.get_spectrogram_db().shape)
+subprocess.run(["identify", sample.spectogram_img])
