@@ -19,20 +19,17 @@
 
 import os
 import glob
-import json
 import PIL
 import subprocess
+import re
 
-import IPython.display as ipd
 import numpy as np
-import pandas as pd
-from pretty_midi import pretty_midi
 import librosa
 import librosa.display
 from matplotlib import pyplot as plt
-from matplotlib import patches
 
 import matplotlib.pyplot as plt
+
 
 class MTDSample:
 
@@ -44,6 +41,15 @@ class MTDSample:
   TEMP_IMG_FILENAME = "TMP_IMAGE.png"
   IMG_WIDTH_PER_FRAME = 2
   IMG_HEIGHT = 512
+
+  @staticmethod
+  def get_all_mtd_ids() -> list:
+    ids = []
+    filenames = glob.glob(MTDSample.BASE_DATASET_PATH + "/data_AUDIO/*")
+    regex = r"MTD(\d{4})"
+    for file in filenames:
+      ids.append(re.findall(regex, file)[0])
+    return ids
 
   def __init__(self, id):
     self.id = id
@@ -63,7 +69,7 @@ class MTDSample:
     self.wav = self.get_file(os.path.join(MTDSample.BASE_DATASET_PATH, 'data_AUDIO', f'MTD{self.id}_*.wav'))
 
   def get_humdrum(self):
-    return open(self.score_humdrum, 'r').read()
+    return open(self.score_humdrum, 'r').readlines()
 
   def get_file(self, fn):
       files = glob.glob(fn)
@@ -90,13 +96,3 @@ class MTDSample:
     self.spectogram_img = filename
     pil_image.save(filename)
     subprocess.run(["rm", self.TEMP_IMG_FILENAME])
-
-sample = MTDSample('0429')
-sample.save_spectogram_into_dataset()
-print(sample.get_spectrogram_db().shape)
-subprocess.run(["identify", sample.spectogram_img])
-
-sample = MTDSample('0436')
-sample.save_spectogram_into_dataset()
-print(sample.get_spectrogram_db().shape)
-subprocess.run(["identify", sample.spectogram_img])
