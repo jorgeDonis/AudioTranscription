@@ -69,7 +69,7 @@ class MTDSample:
     self.wav = self.get_file(os.path.join(MTDSample.BASE_DATASET_PATH, 'data_AUDIO', f'MTD{self.id}_*.wav'))
 
   def get_humdrum(self):
-    return open(self.score_humdrum, 'r').readlines()
+    return open(self.score_humdrum, 'r').read().splitlines()
 
   def get_file(self, fn):
       files = glob.glob(fn)
