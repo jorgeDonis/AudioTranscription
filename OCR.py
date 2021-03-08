@@ -14,9 +14,16 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+import os
+
+
+import matplotlib.pyplot as plt
 from typing import List, Tuple
 import numpy as np
+
 import tensorflow as tf
+import tensorflow.keras as K
+
 import cv2
 import glob
 import re
@@ -55,10 +62,8 @@ def pad_label(label : List[int], max_label_len : int) -> List[int]:
     return label
 
 def show_img(img) -> None:
-    cv2.imshow('img', img)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
+    plt.imshow(img, cmap='gray')
+    plt.show()
 
 # Yields training data in batches
 def train_generator() -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -80,15 +85,70 @@ def train_generator() -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
             labels = [pad_label(x, max_label_len) for x in labels]
             images = np.array(images)
             labels = np.array(labels)
-            yield images, labels, original_img_lens, original_label_lens
+            inputs_fit = {
+                'padded_images': images,
+                'padded_labels': labels,
+                'original_image_lengths': original_img_lens,
+                'original_label_lengths': original_label_lens
+            }
+            outputs_train = { 'ctc': np.zeros([BATCH_SIZE]) } 
+            yield inputs_fit, outputs_train, [None]
             images = []
             labels = []
             i = 0
 
+def print_debug_batch_loss(args):
+    y_pred, labels, input_length, label_length = args
+    print(F"[INFO] y_pred = {y_pred}")
+    print(F"[INFO] labels = {labels}")
+    print(F"[INFO] input_length = {input_length}")
+    print(F"[INFO] label_length = {label_length}")
+    print("\n")
+
+
+def ctc_lambda_func(args):
+    y_pred, labels, input_length, label_length = args
+    print_debug_batch_loss(args)
+    return K.backend.ctc_batch_cost(labels, y_pred, input_length, label_length)
+
+def get_activation_training_models() -> Tuple[object, object]:
+    inputs = tf.keras.layers.Input(shape=(IMG_HEIGHT, None, 1), name='padded_images')
+    conv_1 = tf.keras.layers.Conv2D(64, (3,3), activation = 'relu', padding='same')(inputs)
+    pool_1 = tf.keras.layers.MaxPool2D(pool_size=(2, 2), strides=2)(conv_1)
+    conv_2 = tf.keras.layers.Conv2D(128, (3,3), activation = 'relu', padding='same')(pool_1)
+    pool_2 = tf.keras.layers.MaxPool2D(pool_size=(2, 2), strides=2)(conv_2)
+    conv_3 = tf.keras.layers.Conv2D(256, (3,3), activation = 'relu', padding='same')(pool_2)
+    conv_4 = tf.keras.layers.Conv2D(256, (3,3), activation = 'relu', padding='same')(conv_3)
+    pool_4 = tf.keras.layers.MaxPool2D(pool_size=(2, 1))(conv_4)
+    conv_5 = tf.keras.layers.Conv2D(512, (3,3), activation = 'relu', padding='same')(pool_4)
+    batch_norm_5 = tf.keras.layers.BatchNormalization()(conv_5)
+    conv_6 = tf.keras.layers.Conv2D(512, (3,3), activation = 'relu', padding='same')(batch_norm_5)
+    batch_norm_6 = tf.keras.layers.BatchNormalization()(conv_6)
+    pool_6 = tf.keras.layers.MaxPool2D(pool_size=(2, 2))(batch_norm_6)
+    conv_7 = tf.keras.layers.Conv2D(512, (2,2), activation = 'relu')(pool_6)
+    squeezed = tf.keras.layers.Lambda(lambda x: tf.squeeze(x, 1))(conv_7)
+    blstm_1 = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units = 128, input_shape=[None], return_sequences=True, dropout = 0.2))(squeezed)
+    blstm_2 = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units = 128, input_shape=[None], return_sequences=True, dropout = 0.2))(blstm_1)
+    outputs = tf.keras.layers.Dense(len(CHAR_LIST) + 1, activation = 'softmax')(blstm_2)
+    act_model = tf.keras.Model(inputs, outputs)
+
+    labels = tf.keras.layers.Input(dtype='int64', shape=[None], name='padded_labels')
+    input_length = tf.keras.layers.Input(dtype='int64', shape=[1], name='original_image_lengths')
+    label_length = tf.keras.layers.Input(dtype='int64', shape=[1], name='original_label_lengths')
+
+    loss_out = tf.keras.layers.Lambda(ctc_lambda_func, output_shape=(1,), name='ctc')([outputs, labels, input_length, label_length])
+    training_model = tf.keras.Model(inputs=[inputs, labels, input_length, label_length], outputs=loss_out)
+    training_model.compile(loss = {'ctc' : lambda y_true, y_pred: y_pred}, optimizer = 'adam')
+
+    return training_model, act_model
+
 generator = train_generator()
-for i in range(0, 3):
-    images, labels, original_img_lens, original_label_lens = next(generator)
-    for image in images:
-        show_img(image)
+training_model, act_model = get_activation_training_models()
+filepath="best_model.hdf5"
+checkpoint = K.callbacks.ModelCheckpoint(filepath=filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
+callbacks_list = [checkpoint]
+act_model.summary()
+training_model.summary()
+training_model.fit(x = generator, callbacks = callbacks_list)
 
 
