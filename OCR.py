@@ -33,6 +33,7 @@ BATCH_SIZE = 4
 IMG_HEIGHT = 32
 CHAR_LIST = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 BLANK_CHARACTER = len(CHAR_LIST)
+POOLING_RATIO = 16
 
 def encode_str(txt : str) -> List[int]:
     # encoding each output word into digits
@@ -78,7 +79,7 @@ def train_generator() -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         if (i == BATCH_SIZE):
             max_image_len = max([x.shape[1] for x in images])
             max_label_len = max([len(x) for x in labels])
-            original_img_lens = np.array([x.shape[1] for x in images])
+            original_img_lens = np.array([x.shape[1] // POOLING_RATIO for x in images])
             original_label_lens = np.array([len(x) for x in labels])
             images = [pad_img_horizontal(x, max_image_len) for x in images]
             labels = [encode_str(x) for x in labels]
@@ -149,6 +150,6 @@ checkpoint = K.callbacks.ModelCheckpoint(filepath=filepath, monitor='val_loss', 
 callbacks_list = [checkpoint]
 act_model.summary()
 training_model.summary()
-training_model.fit(x = generator, callbacks = callbacks_list)
+# training_model.fit(x = generator, callbacks = callbacks_list)
 
 
