@@ -14,6 +14,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+from tensorflow.keras import callbacks
+from tensorflow.python.keras.callbacks import ModelCheckpoint
 from OCR_Dataset import OCR_Dataset
 
 import matplotlib.pyplot as plt
@@ -155,25 +157,35 @@ def get_activation_training_models() -> Tuple[object, object]:
 
 generator = train_generator()
 training_model, act_model = get_activation_training_models()
-filepath="best_model.hdf5"
-checkpoint = K.callbacks.ModelCheckpoint(filepath=filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
-callbacks_list = [checkpoint]
 # act_model.summary()
 training_model.summary()
 
-num_bad_images = 0
-for i in range(0, 384151 // BATCH_SIZE):
-    # print(F"i = {i}")
-    inputs_fit, outputs_train, shape = next(generator)
-    for j in range(0, BATCH_SIZE):
-        if ((inputs_fit['padded_images'][j].shape[1] // POOLING_RATIO) < inputs_fit['original_label_lengths'][j]):
-            img = inputs_fit['padded_images'][j]
-            show_img(img)
-            print(F"Padded_width = {img.shape[1]}")
-            print(F"Original_width = {inputs_fit['original_image_lengths'][j]}")
-            print(F"Original label length = {inputs_fit['original_label_lengths'][j]}")
-            num_bad_images = num_bad_images + 1
+# num_bad_images = 0
+# for i in range(0, 384151 // BATCH_SIZE):
+#     # print(F"i = {i}")
+#     inputs_fit, outputs_train, shape = next(generator)
+#     for j in range(0, BATCH_SIZE):
+#         if ((inputs_fit['padded_images'][j].shape[1] // POOLING_RATIO) < inputs_fit['original_label_lengths'][j]):
+#             img = inputs_fit['padded_images'][j]
+#             show_img(img)
+#             print(F"Padded_width = {img.shape[1]}")
+#             print(F"Original_width = {inputs_fit['original_image_lengths'][j]}")
+#             print(F"Original label length = {inputs_fit['original_label_lengths'][j]}")
+#             num_bad_images = num_bad_images + 1
         
-print(F"Number of bad images : {num_bad_images} ({num_bad_images / 384151 * 100}%)")
+# print(F"Number of bad images : {num_bad_images} ({num_bad_images / 384151 * 100}%)")
 
-# training_model.fit(x = generator, callbacks = callbacks_list)
+# checkpoint_filepath = '/tmp/checkpoint'
+# model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+#     filepath=checkpoint_filepath,
+#     save_weights_only=False,
+#     monitor='val_loss',
+#     mode='min',
+#     save_best_only=True
+# )
+# early_stopping_callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=5)
+
+training_model.fit(
+    x = generator
+    # callbacks = [model_checkpoint_callback, early_stopping_callback]
+)
