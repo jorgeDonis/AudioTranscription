@@ -1,5 +1,5 @@
-# Copyright (C) 2020 JORGE DONIS DEL ÁLAMO
 
+# Copyright (C) 2020 JORGE DONIS DEL ÁLAMO
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
 # as published by the Free Software Foundation; either version 2
@@ -13,6 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+from OCR_Dataset import OCR_Dataset
 
 import matplotlib.pyplot as plt
 from typing import List, Tuple
@@ -67,12 +69,19 @@ def show_img(img) -> None:
     plt.imshow(img, cmap='gray')
     plt.show()
 
+def images_wide_enough(img_lens, label_lens):
+    for i in range(0, len(img_lens)):
+        if img_lens[i] < label_lens[i]:
+            return False
+    return True
+
 # Yields training data in batches
 def train_generator() -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    dataset = OCR_Dataset()
     i = 0
     images = []
     labels = []
-    for image_path in glob.iglob("./OCR_dataset_2/*.jpg"):
+    for image_path in glob.iglob(dataset.DATASET_DIR + "*.jpg"):
         img, label = load_image_label(image_path)
         if (img is None):
             continue
@@ -82,21 +91,23 @@ def train_generator() -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         if (i == BATCH_SIZE):
             max_image_len = max([x.shape[1] for x in images])
             max_label_len = max([len(x) for x in labels])
-            original_img_lens = np.array([x.shape[1] // POOLING_RATIO for x in images])
-            original_label_lens = np.array([len(x) for x in labels])
-            images = [pad_img_horizontal(x, max_image_len) for x in images]
-            labels = [encode_str(x) for x in labels]
-            labels = [pad_label(x, max_label_len) for x in labels]
-            images = np.array(images)
-            labels = np.array(labels)
-            inputs_fit = {
-                'padded_images': images,
-                'padded_labels': labels,
-                'original_image_lengths': original_img_lens,
-                'original_label_lengths': original_label_lens
-            }
-            outputs_train = { 'ctc': np.zeros([BATCH_SIZE]) } 
-            yield inputs_fit, outputs_train, [None]
+            #check that all images in the batch are wide enough
+            if ((max_image_len // POOLING_RATIO) >= max_label_len):
+                original_img_lens = np.array([x.shape[1] // POOLING_RATIO for x in images])
+                original_label_lens = np.array([len(x) for x in labels])
+                images = [pad_img_horizontal(x, max_image_len) for x in images]
+                labels = [encode_str(x) for x in labels]
+                labels = [pad_label(x, max_label_len) for x in labels]
+                images = np.array(images)
+                labels = np.array(labels)
+                inputs_fit = {
+                    'padded_images': images,
+                    'padded_labels': labels,
+                    'original_image_lengths': original_img_lens,
+                    'original_label_lengths': original_label_lens
+                }
+                outputs_train = { 'ctc': np.zeros([BATCH_SIZE]) } 
+                yield inputs_fit, outputs_train, [None]
             images = []
             labels = []
             i = 0
@@ -156,15 +167,13 @@ for i in range(0, 384151 // BATCH_SIZE):
     inputs_fit, outputs_train, shape = next(generator)
     for j in range(0, BATCH_SIZE):
         if ((inputs_fit['padded_images'][j].shape[1] // POOLING_RATIO) < inputs_fit['original_label_lengths'][j]):
-            # img = inputs_fit['padded_images'][j]
-            # show_img(img)
-            # print(F"Padded_width = {img.shape[1]}")
-            # print(F"Original_width = {inputs_fit['original_image_lengths'][j]}")
-            # print(F"Original label length = {inputs_fit['original_label_lengths'][j]}")
+            img = inputs_fit['padded_images'][j]
+            show_img(img)
+            print(F"Padded_width = {img.shape[1]}")
+            print(F"Original_width = {inputs_fit['original_image_lengths'][j]}")
+            print(F"Original label length = {inputs_fit['original_label_lengths'][j]}")
             num_bad_images = num_bad_images + 1
         
 print(F"Number of bad images : {num_bad_images} ({num_bad_images / 384151 * 100}%)")
 
 # training_model.fit(x = generator, callbacks = callbacks_list)
-
-
