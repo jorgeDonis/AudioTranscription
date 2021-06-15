@@ -35,7 +35,7 @@ BATCH_SIZE = 4
 IMG_HEIGHT = 32
 CHAR_LIST = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 BLANK_CHARACTER = len(CHAR_LIST)
-POOLING_RATIO = 8
+POOLING_RATIO = 16
 
 def encode_str(txt : str) -> List[int]:
     # encoding each output word into digits
@@ -109,7 +109,7 @@ def train_generator() -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
                     'original_label_lengths': original_label_lens
                 }
                 outputs_train = { 'ctc': np.zeros([BATCH_SIZE]) } 
-                yield inputs_fit, outputs_train, [None]
+                yield inputs_fit, outputs_train
             images = []
             labels = []
             i = 0
@@ -139,8 +139,10 @@ def get_activation_training_models() -> Tuple[object, object]:
     batch_norm = tf.keras.layers.BatchNormalization()(conv_3)
     pool_3 = tf.keras.layers.MaxPool2D(pool_size=(2, 2))(batch_norm)
     conv_4 = tf.keras.layers.Conv2D(512, (2,2), activation = 'relu', padding='same')(pool_3)
-    reshape = tf.keras.layers.Lambda(lambda x: tf.reshape(x, [tf.shape(conv_4)[0], -1, 512 * 4])) (conv_4)
-    blstm_1 = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units = 128, input_shape=[None], return_sequences=True, dropout = 0.2))(reshape)
+    pool_6 = tf.keras.layers.MaxPool2D(pool_size=(2, 2))(conv_4)
+    conv_7 = tf.keras.layers.Conv2D(512, (2,2), activation = 'relu')(pool_6)
+    squeezed = tf.keras.layers.Lambda(lambda x: tf.squeeze(x, 1))(conv_7)
+    blstm_1 = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units = 128, input_shape=[None], return_sequences=True, dropout = 0.2))(squeezed)
     blstm_2 = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units = 128, input_shape=[None], return_sequences=True, dropout = 0.2))(blstm_1)
     outputs = tf.keras.layers.Dense(len(CHAR_LIST) + 1, activation = 'softmax')(blstm_2)
     act_model = tf.keras.Model(inputs, outputs)
