@@ -35,7 +35,7 @@ BATCH_SIZE = 4
 IMG_HEIGHT = 32
 CHAR_LIST = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 BLANK_CHARACTER = len(CHAR_LIST)
-POOLING_RATIO = 16
+POOLING_RATIO = 8
 
 def encode_str(txt : str) -> List[int]:
     # encoding each output word into digits
@@ -110,16 +110,17 @@ def train_generator() -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
                 }
                 outputs_train = { 'ctc': np.zeros([BATCH_SIZE]) } 
                 yield inputs_fit, outputs_train
+                print("Yielded batch")
             images = []
             labels = []
             i = 0
 
 def print_debug_batch_loss(args):
     y_pred, labels, input_length, label_length = args
-    print(F"[INFO] y_pred = {y_pred}")
-    print(F"[INFO] labels = {labels}")
-    print(F"[INFO] input_length = {input_length}")
-    print(F"[INFO] label_length = {label_length}")
+    print(F"[INFO] y_pred = {y_pred.shape}")
+    print(F"[INFO] labels = {labels.shape}")
+    print(F"[INFO] input_length = {input_length.shape}")
+    print(F"[INFO] label_length = {label_length.shape}")
     print("\n")
 
 
@@ -128,7 +129,7 @@ def ctc_lambda_func(args):
     print_debug_batch_loss(args)
     return K.backend.ctc_batch_cost(labels, y_pred, input_length, label_length)
 
-def get_activation_training_models() -> Tuple[object, object]:
+def get_activation_training_models():
     inputs = tf.keras.layers.Input(shape=(IMG_HEIGHT, None, 1), name='padded_images')
 
     conv_1 = tf.keras.layers.Conv2D(64, (3,3), activation = 'relu', padding='same')(inputs)
@@ -139,19 +140,17 @@ def get_activation_training_models() -> Tuple[object, object]:
     batch_norm = tf.keras.layers.BatchNormalization()(conv_3)
     pool_3 = tf.keras.layers.MaxPool2D(pool_size=(2, 2))(batch_norm)
     conv_4 = tf.keras.layers.Conv2D(512, (2,2), activation = 'relu', padding='same')(pool_3)
-    pool_6 = tf.keras.layers.MaxPool2D(pool_size=(2, 2))(conv_4)
-    conv_7 = tf.keras.layers.Conv2D(512, (2,2), activation = 'relu')(pool_6)
-    squeezed = tf.keras.layers.Lambda(lambda x: tf.squeeze(x, 1))(conv_7)
-    blstm_1 = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units = 128, input_shape=[None], return_sequences=True, dropout = 0.2))(squeezed)
+    reshape = tf.keras.layers.Lambda(lambda x: tf.reshape(x, [tf.shape(conv_4)[0], -1, 512 * 4])) (conv_4)
+    blstm_1 = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units = 128, input_shape=[None], return_sequences=True, dropout = 0.2))(reshape)
     blstm_2 = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units = 128, input_shape=[None], return_sequences=True, dropout = 0.2))(blstm_1)
     outputs = tf.keras.layers.Dense(len(CHAR_LIST) + 1, activation = 'softmax')(blstm_2)
     act_model = tf.keras.Model(inputs, outputs)
 
-    labels = tf.keras.layers.Input(dtype='int64', shape=[None], name='padded_labels')
+    labels = tf.keras.layers.Input(dtype='float32', shape=[None], name='padded_labels')
     input_length = tf.keras.layers.Input(dtype='int64', shape=[1], name='original_image_lengths')
     label_length = tf.keras.layers.Input(dtype='int64', shape=[1], name='original_label_lengths')
 
-    loss_out = tf.keras.layers.Lambda(ctc_lambda_func, output_shape=(1,), name='ctc')([outputs, labels, input_length, label_length])
+    loss_out = tf.keras.layers.Lambda(ctc_lambda_func, output_shape=(1), name='ctc')([outputs, labels, input_length, label_length])
     training_model = tf.keras.Model(inputs=[inputs, labels, input_length, label_length], outputs=loss_out)
     training_model.compile(loss = { 'ctc' : lambda y_true, y_pred: y_pred }, optimizer = 'adam')
 
