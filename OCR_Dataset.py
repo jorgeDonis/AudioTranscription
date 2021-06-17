@@ -36,6 +36,7 @@ class OCR_Dataset:
     COMPRESSED_FILENAME = "OCR_dataset.tar.gz"
     GOOGLE_DRIVE_FILE_ID = "1Uhnm-n8AFx1mfmdwgzaK4BIPJo8l0CCh"
     DATASET_DIR = "OCR_dataset_2/"
+    DEBUG_DATASET_DIR = "OCR_dataset_3/"
 
     def __init__(self):
         if not os.path.isdir(OCR_Dataset.DATASET_DIR):

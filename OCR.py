@@ -19,7 +19,6 @@ from tensorflow.python.keras.callbacks import ModelCheckpoint
 from OCR_Dataset import OCR_Dataset
 
 import matplotlib.pyplot as plt
-from typing import List, Tuple
 import numpy as np
 
 import tensorflow as tf
@@ -37,14 +36,14 @@ CHAR_LIST = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 BLANK_CHARACTER = len(CHAR_LIST)
 POOLING_RATIO = 8
 
-def encode_str(txt : str) -> List[int]:
+def encode_str(txt):
     # encoding each output word into digits
     dig_lst = []
     for index, char in enumerate(txt):
         dig_lst.append(CHAR_LIST.index(char))
     return dig_lst
 
-def load_image_label(image_path : str) -> Tuple[np.ndarray, str]:
+def load_image_label(image_path):
     img = cv2.imread(image_path)
     if (img is None):
         return None, None
@@ -56,18 +55,18 @@ def load_image_label(image_path : str) -> Tuple[np.ndarray, str]:
     label = re.findall(regex, image_path)[0]
     return img, label
 
-def pad_img_vertical(img : np.ndarray, height : int) -> np.ndarray:
+def pad_img_vertical(img, height):
     return np.pad(img, ( (0, height - img.shape[0]), (0, 0), (0, 0) ), 'constant', constant_values=( (0, 0), (0, 0), (0, 0) ))
 
-def pad_img_horizontal(img, max_img_len) -> np.ndarray:
+def pad_img_horizontal(img, max_img_len):
     return np.pad(img, ( (0, 0), (0, max_img_len - img.shape[1]), (0, 0) ), 'constant', constant_values= ( (0, 0), (0, 0), (0, 0) ))
     
-def pad_label(label : List[int], max_label_len : int) -> List[int]:
+def pad_label(label, max_label_len):
     for i in range(0, max_label_len - len(label)):
         label.append(BLANK_CHARACTER)
     return label
 
-def show_img(img) -> None:
+def show_img(img):
     plt.imshow(img, cmap='gray')
     plt.show()
 
@@ -78,12 +77,12 @@ def images_wide_enough(img_lens, label_lens):
     return True
 
 # Yields training data in batches
-def train_generator() -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def train_generator():
     dataset = OCR_Dataset()
     i = 0
     images = []
     labels = []
-    for image_path in glob.iglob(dataset.DATASET_DIR + "*.jpg"):
+    for image_path in glob.iglob(dataset.DEBUG_DATASET_DIR + "*.jpg"):
         img, label = load_image_label(image_path)
         if (img is None):
             continue
@@ -115,18 +114,9 @@ def train_generator() -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
             labels = []
             i = 0
 
-def print_debug_batch_loss(args):
-    y_pred, labels, input_length, label_length = args
-    print(F"[INFO] y_pred = {y_pred.shape}")
-    print(F"[INFO] labels = {labels.shape}")
-    print(F"[INFO] input_length = {input_length.shape}")
-    print(F"[INFO] label_length = {label_length.shape}")
-    print("\n")
-
 
 def ctc_lambda_func(args):
     y_pred, labels, input_length, label_length = args
-    print_debug_batch_loss(args)
     return K.backend.ctc_batch_cost(labels, y_pred, input_length, label_length)
 
 def get_activation_training_models():
@@ -140,7 +130,8 @@ def get_activation_training_models():
     batch_norm = tf.keras.layers.BatchNormalization()(conv_3)
     pool_3 = tf.keras.layers.MaxPool2D(pool_size=(2, 2))(batch_norm)
     conv_4 = tf.keras.layers.Conv2D(512, (2,2), activation = 'relu', padding='same')(pool_3)
-    reshape = tf.keras.layers.Lambda(lambda x: tf.reshape(x, [tf.shape(conv_4)[0], -1, 512 * 4])) (conv_4)
+    permute = tf.keras.layers.Permute((2,1,3))(conv_4)
+    reshape = tf.keras.layers.Reshape((-1, 512 * IMG_HEIGHT // POOLING_RATIO))(permute)
     blstm_1 = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units = 128, input_shape=[None], return_sequences=True, dropout = 0.2))(reshape)
     blstm_2 = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units = 128, input_shape=[None], return_sequences=True, dropout = 0.2))(blstm_1)
     outputs = tf.keras.layers.Dense(len(CHAR_LIST) + 1, activation = 'softmax')(blstm_2)
