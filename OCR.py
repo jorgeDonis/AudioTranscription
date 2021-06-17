@@ -70,9 +70,9 @@ def show_img(img):
     plt.imshow(img, cmap='gray')
     plt.show()
 
-def images_wide_enough(img_lens, label_lens):
-    for i in range(0, len(img_lens)):
-        if img_lens[i] < label_lens[i]:
+def images_wide_enough(imgs, labels):
+    for img, label in zip(imgs, labels):
+        if img.shape[1] // POOLING_RATIO < len(label):
             return False
     return True
 
@@ -92,9 +92,8 @@ def train_generator():
         if (i == BATCH_SIZE):
             max_image_len = max([x.shape[1] for x in images])
             max_label_len = max([len(x) for x in labels])
-            #check that all images in the batch are wide enough
-            if ((max_image_len // POOLING_RATIO) >= max_label_len):
-                original_img_lens = np.array([x.shape[1] // POOLING_RATIO for x in images])
+            if images_wide_enough(images, labels):
+                original_image_lengths_after_pooling = np.array([x.shape[1] // POOLING_RATIO for x in images])
                 original_label_lens = np.array([len(x) for x in labels])
                 images = [pad_img_horizontal(x, max_image_len) for x in images]
                 labels = [encode_str(x) for x in labels]
@@ -104,11 +103,11 @@ def train_generator():
                 inputs_fit = {
                     'padded_images': images,
                     'padded_labels': labels,
-                    'original_image_lengths': original_img_lens,
+                    'original_image_lengths_after_pooling': original_image_lengths_after_pooling,
                     'original_label_lengths': original_label_lens
                 }
-                outputs_train = { 'ctc': np.zeros([BATCH_SIZE]) } 
-                yield inputs_fit, outputs_train
+                outputs_fit = { 'ctc': np.zeros([BATCH_SIZE]) } 
+                yield inputs_fit, outputs_fit
                 print("Yielded batch")
             images = []
             labels = []
@@ -130,7 +129,7 @@ def get_activation_training_models():
     batch_norm = tf.keras.layers.BatchNormalization()(conv_3)
     pool_3 = tf.keras.layers.MaxPool2D(pool_size=(2, 2))(batch_norm)
     conv_4 = tf.keras.layers.Conv2D(512, (2,2), activation = 'relu', padding='same')(pool_3)
-    permute = tf.keras.layers.Permute((2,1,3))(conv_4)
+    permute = tf.keras.layers.Permute((2, 1, 3))(conv_4)
     reshape = tf.keras.layers.Reshape((-1, 512 * IMG_HEIGHT // POOLING_RATIO))(permute)
     blstm_1 = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units = 128, input_shape=[None], return_sequences=True, dropout = 0.2))(reshape)
     blstm_2 = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units = 128, input_shape=[None], return_sequences=True, dropout = 0.2))(blstm_1)
@@ -138,7 +137,7 @@ def get_activation_training_models():
     act_model = tf.keras.Model(inputs, outputs)
 
     labels = tf.keras.layers.Input(dtype='float32', shape=[None], name='padded_labels')
-    input_length = tf.keras.layers.Input(dtype='int64', shape=[1], name='original_image_lengths')
+    input_length = tf.keras.layers.Input(dtype='int64', shape=[1], name='original_image_lengths_after_pooling')
     label_length = tf.keras.layers.Input(dtype='int64', shape=[1], name='original_label_lengths')
 
     loss_out = tf.keras.layers.Lambda(ctc_lambda_func, output_shape=(1), name='ctc')([outputs, labels, input_length, label_length])
@@ -150,22 +149,16 @@ def get_activation_training_models():
 generator = train_generator()
 training_model, act_model = get_activation_training_models()
 # act_model.summary()
-training_model.summary()
+# training_model.summary()
 
-# num_bad_images = 0
-# for i in range(0, 384151 // BATCH_SIZE):
-#     # print(F"i = {i}")
-#     inputs_fit, outputs_train, shape = next(generator)
+# for inputs_fit, outputs_fit in generator:
 #     for j in range(0, BATCH_SIZE):
-#         if ((inputs_fit['padded_images'][j].shape[1] // POOLING_RATIO) < inputs_fit['original_label_lengths'][j]):
+#         if inputs_fit['original_image_lengths_after_pooling'][j] < inputs_fit['original_label_lengths'][j]:
 #             img = inputs_fit['padded_images'][j]
-#             show_img(img)
 #             print(F"Padded_width = {img.shape[1]}")
-#             print(F"Original_width = {inputs_fit['original_image_lengths'][j]}")
+#             print(F"Original width after pooling = {inputs_fit['original_image_lengths_after_pooling'][j]}")
 #             print(F"Original label length = {inputs_fit['original_label_lengths'][j]}")
-#             num_bad_images = num_bad_images + 1
-        
-# print(F"Number of bad images : {num_bad_images} ({num_bad_images / 384151 * 100}%)")
+#             show_img(img)
 
 # checkpoint_filepath = '/tmp/checkpoint'
 # model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
@@ -177,7 +170,4 @@ training_model.summary()
 # )
 # early_stopping_callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=5)
 
-training_model.fit(
-    x = generator
-    # callbacks = [model_checkpoint_callback, early_stopping_callback]
-)
+training_model.fit(x = generator)
