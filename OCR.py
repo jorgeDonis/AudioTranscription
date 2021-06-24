@@ -35,6 +35,7 @@ IMG_HEIGHT = 32
 CHAR_LIST = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 BLANK_CHARACTER = len(CHAR_LIST)
 POOLING_RATIO = 8
+EPOCHS = 20
 
 def encode_str(txt):
     # encoding each output word into digits
@@ -82,36 +83,36 @@ def train_generator():
     i = 0
     images = []
     labels = []
-    for image_path in glob.iglob(dataset.DEBUG_DATASET_DIR + "*.jpg"):
-        img, label = load_image_label(image_path)
-        if (img is None):
-            continue
-        images.append(img)
-        labels.append(label)
-        i += 1
-        if (i == BATCH_SIZE):
-            max_image_len = max([x.shape[1] for x in images])
-            max_label_len = max([len(x) for x in labels])
-            if images_wide_enough(images, labels):
-                original_image_lengths_after_pooling = np.array([x.shape[1] // POOLING_RATIO for x in images])
-                original_label_lens = np.array([len(x) for x in labels])
-                images = [pad_img_horizontal(x, max_image_len) for x in images]
-                labels = [encode_str(x) for x in labels]
-                labels = [pad_label(x, max_label_len) for x in labels]
-                images = np.array(images)
-                labels = np.array(labels)
-                inputs_fit = {
-                    'padded_images': images,
-                    'padded_labels': labels,
-                    'original_image_lengths_after_pooling': original_image_lengths_after_pooling,
-                    'original_label_lengths': original_label_lens
-                }
-                outputs_fit = { 'ctc': np.zeros([BATCH_SIZE]) } 
-                yield inputs_fit, outputs_fit
-                print("Yielded batch")
-            images = []
-            labels = []
-            i = 0
+    for epoch in range(0, EPOCHS):
+        for image_path in glob.iglob(dataset.DEBUG_DATASET_DIR + "*.jpg"):
+            img, label = load_image_label(image_path)
+            if (img is None):
+                continue
+            images.append(img)
+            labels.append(label)
+            i += 1
+            if (i == BATCH_SIZE):
+                max_image_len = max([x.shape[1] for x in images])
+                max_label_len = max([len(x) for x in labels])
+                if images_wide_enough(images, labels):
+                    original_image_lengths_after_pooling = np.array([x.shape[1] // POOLING_RATIO for x in images])
+                    original_label_lens = np.array([len(x) for x in labels])
+                    images = [pad_img_horizontal(x, max_image_len) for x in images]
+                    labels = [encode_str(x) for x in labels]
+                    labels = [pad_label(x, max_label_len) for x in labels]
+                    images = np.array(images)
+                    labels = np.array(labels)
+                    inputs_fit = {
+                        'padded_images': images,
+                        'padded_labels': labels,
+                        'original_image_lengths_after_pooling': original_image_lengths_after_pooling,
+                        'original_label_lengths': original_label_lens
+                    }
+                    outputs_fit = { 'ctc': np.zeros([BATCH_SIZE]) } 
+                    yield inputs_fit, outputs_fit
+                images = []
+                labels = []
+                i = 0
 
 
 def ctc_lambda_func(args):
@@ -171,3 +172,6 @@ training_model, act_model = get_activation_training_models()
 # early_stopping_callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=5)
 
 training_model.fit(x = generator)
+
+img, label = load_image_label("/home/jorge/AudioTranscription/OCR_dataset_3/15_ _79555.jpg")
+input = { 'padded_images' : np.array([img]) }
