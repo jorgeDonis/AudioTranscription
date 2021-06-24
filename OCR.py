@@ -30,12 +30,12 @@ import re
 from os import system
 
 NUM_IMAGES_DATASET = 384151
-BATCH_SIZE = 4
+BATCH_SIZE = 16
 IMG_HEIGHT = 32
 CHAR_LIST = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 BLANK_CHARACTER = len(CHAR_LIST)
 POOLING_RATIO = 8
-EPOCHS = 20
+EPOCHS = 25
 
 def encode_str(txt):
     # encoding each output word into digits
@@ -71,9 +71,21 @@ def show_img(img):
     plt.imshow(img, cmap='gray')
     plt.show()
 
+def num_repeated_chars(label):
+    num_repeated_chars = 0
+    if len(label) == 0:
+        return num_repeated_chars
+    previous_char = label[0]
+    for i in range(1, len(label)):
+        if label[i] == previous_char:
+            num_repeated_chars += 1
+        previous_char = label[i]
+    return num_repeated_chars
+
 def images_wide_enough(imgs, labels):
     for img, label in zip(imgs, labels):
-        if img.shape[1] // POOLING_RATIO < len(label):
+        #CHECK FOR BLANK CHARACTER (more timesteps required)
+        if img.shape[1] // POOLING_RATIO < (len(label) + num_repeated_chars(label)):
             return False
     return True
 
@@ -149,29 +161,24 @@ def get_activation_training_models():
 
 generator = train_generator()
 training_model, act_model = get_activation_training_models()
-# act_model.summary()
-# training_model.summary()
-
-# for inputs_fit, outputs_fit in generator:
-#     for j in range(0, BATCH_SIZE):
-#         if inputs_fit['original_image_lengths_after_pooling'][j] < inputs_fit['original_label_lengths'][j]:
-#             img = inputs_fit['padded_images'][j]
-#             print(F"Padded_width = {img.shape[1]}")
-#             print(F"Original width after pooling = {inputs_fit['original_image_lengths_after_pooling'][j]}")
-#             print(F"Original label length = {inputs_fit['original_label_lengths'][j]}")
-#             show_img(img)
-
-# checkpoint_filepath = '/tmp/checkpoint'
-# model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-#     filepath=checkpoint_filepath,
-#     save_weights_only=False,
-#     monitor='val_loss',
-#     mode='min',
-#     save_best_only=True
-# )
-# early_stopping_callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=5)
-
 training_model.fit(x = generator)
 
-img, label = load_image_label("/home/jorge/AudioTranscription/OCR_dataset_3/15_ _79555.jpg")
-input = { 'padded_images' : np.array([img]) }
+
+def print_image_text(image_path):
+    img, label = load_image_label(image_path)
+    if (img is None):
+        print(F"Image {image_path} could not be loaded")
+        return
+    input = { 'padded_images' : np.array([img]) }
+    prediction = act_model.predict(input)
+    best_indices = [ np.argmax(x) for x in prediction[0]]
+    word = [ CHAR_LIST[x] if x != BLANK_CHARACTER else ' ' for x in best_indices]
+    print(F"Original: {label}, predicted: {word}")
+
+
+print_image_text("./OCR_dataset_3/23_Wasp_85572.jpg")
+print_image_text("./OCR_dataset_3/21_AFFECTED_1392.jpg")
+print_image_text("./OCR_dataset_3/138_broodily_9767.jpg")
+print_image_text("./OCR_dataset_3/210_canoes_11214.jpg")
+print_image_text("./OCR_dataset_3/194_vicksburg_84553.jpg")
+
