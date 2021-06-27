@@ -37,6 +37,7 @@ class OCR_Dataset:
     GOOGLE_DRIVE_FILE_ID = "1Uhnm-n8AFx1mfmdwgzaK4BIPJo8l0CCh"
     DATASET_DIR = "OCR_dataset_2/"
     DEBUG_DATASET_DIR_TRAIN = "OCR_dataset_3_train/"
+    DEBUG_DATASET_DIR_TEST = "OCR_dataset_3_test/"
 
     def __init__(self):
         if not os.path.isdir(OCR_Dataset.DATASET_DIR):
@@ -44,3 +45,8 @@ class OCR_Dataset:
                 download_file_from_google_drive(OCR_Dataset.GOOGLE_DRIVE_FILE_ID, OCR_Dataset.COMPRESSED_FILENAME)
             system("tar -xvzf " + OCR_Dataset.COMPRESSED_FILENAME)
             system("rm -f " + OCR_Dataset.COMPRESSED_FILENAME)
+    
+    def get_val_ds_filenames():
+        filenames = os.listdir(OCR_Dataset.DEBUG_DATASET_DIR_TEST)
+        filepaths = [ OCR_Dataset.DEBUG_DATASET_DIR_TEST + filename for filename in filenames ]
+        return filepaths

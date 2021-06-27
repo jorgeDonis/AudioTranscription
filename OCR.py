@@ -31,12 +31,12 @@ from os import system
 from Levenshtein import distance as levenshtein_distance
 
 NUM_IMAGES_DATASET = 384151
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 IMG_HEIGHT = 32
 CHAR_LIST = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 BLANK_CHARACTER = len(CHAR_LIST)
 POOLING_RATIO = 8
-EPOCHS = 1
+EPOCHS = 10
 MODEL_NAME = "ocr_model.h5"
 
 def encode_str(txt):
@@ -160,19 +160,39 @@ def get_activation_training_models():
 
     return training_model, act_model
 
-generator = train_generator()
-training_model, act_model = get_activation_training_models()
+def get_loss(model, val_inputs, val_labels):
+    predictions = model.predict(val_inputs)
+    total_loss = 0
+    for i in range(0, len(val_inputs)):
+        best_indices = [ np.argmax(x) for x in predictions[i]]
+        char_pred_list = [ CHAR_LIST[x] if x != BLANK_CHARACTER else ' ' for x in best_indices]
+        pred_word = char_pred_list_to_string(char_pred_list)
+        true_label = val_labels[i]
+        loss = levenshtein_distance(pred_word, true_label) / len(true_label)
+        total_loss += loss
+    return total_loss
 
-def get_loss(model, val_data):
-    return 0
-
-def train_model(model, input_generator, val_data):
+def train_model(train_model, act_model, input_generator, val_inputs, val_labels):
     for i in range(0, EPOCHS):
         print(F"Training EPOCH {i}")
-        model.fit(x = generator)
-        print(F"Validation loss: {get_loss(model, val_data)}")
-    model.save(MODEL_NAME)
+        train_model.fit(x = input_generator)
+        print(F"Validation loss: {get_loss(act_model, val_inputs, val_labels)}")
+    act_model.save(MODEL_NAME)
 
+def get_val_ds():
+    images = []
+    labels = []
+    for filepath in OCR_Dataset.get_val_ds_filenames():
+        img, label = load_image_label(filepath)
+        if (img is None):
+            continue
+        if (images_wide_enough([img], [label])):
+            images.append(img)
+            labels.append(label)
+    max_image_len = max([x.shape[1] for x in images])
+    images = [pad_img_horizontal(x, max_image_len) for x in images]
+    images = np.array(images)
+    return ( { 'padded_images' : np.array(images) } ), labels
 
 def char_pred_list_to_string(char_list):
     previous_char = char_list[0]
@@ -185,16 +205,21 @@ def char_pred_list_to_string(char_list):
     return char_list_no_repeated
 
 
-def print_image_text(image_path):
+def print_image_text(image_path, model):
     img, label = load_image_label(image_path)
     if (img is None):
         print(F"Image {image_path} could not be loaded")
         return
     input = { 'padded_images' : np.array([img]) }
-    prediction = act_model.predict(input)
+    prediction = model.predict(input)
     best_indices = [ np.argmax(x) for x in prediction[0]]
     char_pred_list = [ CHAR_LIST[x] if x != BLANK_CHARACTER else ' ' for x in best_indices]
     print(F"Original: {label}, predicted: {char_pred_list_to_string(char_pred_list)}")
+
+generator = train_generator()
+training_model, act_model = get_activation_training_models()
+val_inputs, val_labels = get_val_ds()
+train_model(training_model, act_model, generator, val_inputs, val_labels)
 
 # training_model.fit(x=generator)
 
