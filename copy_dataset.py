@@ -1,8 +1,11 @@
 import os
 import random
 
-N_TRAIN = 1000
-N_TEST = 100
+N_TRAIN = 10000
+N_TEST = 1000
+
+os.system("rm ./OCR_dataset_3_test/*")
+os.system("rm ./OCR_dataset_3_train/*")
 
 filenames = sorted(os.listdir("OCR_dataset_2/"))
 filenames_train = [ filenames.pop(random.randrange(len(filenames))) for filename in range(N_TRAIN) ]

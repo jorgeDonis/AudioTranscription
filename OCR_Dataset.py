@@ -50,3 +50,9 @@ class OCR_Dataset:
         filenames = os.listdir(OCR_Dataset.DEBUG_DATASET_DIR_TEST)
         filepaths = [ OCR_Dataset.DEBUG_DATASET_DIR_TEST + filename for filename in filenames ]
         return filepaths
+
+    def num_training_samples():
+        return len(os.listdir(OCR_Dataset.DEBUG_DATASET_DIR_TRAIN))
+
+    def num_validation_samples():
+        return len(os.listdir(OCR_Dataset.DEBUG_DATASET_DIR_TEST))
