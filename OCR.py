@@ -28,14 +28,16 @@ import cv2
 import glob
 import re
 from os import system
+from Levenshtein import distance as levenshtein_distance
 
 NUM_IMAGES_DATASET = 384151
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 IMG_HEIGHT = 32
 CHAR_LIST = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 BLANK_CHARACTER = len(CHAR_LIST)
 POOLING_RATIO = 8
-EPOCHS = 25
+EPOCHS = 1
+MODEL_NAME = "ocr_model.h5"
 
 def encode_str(txt):
     # encoding each output word into digits
@@ -95,36 +97,35 @@ def train_generator():
     i = 0
     images = []
     labels = []
-    for epoch in range(0, EPOCHS):
-        for image_path in glob.iglob(dataset.DEBUG_DATASET_DIR + "*.jpg"):
-            img, label = load_image_label(image_path)
-            if (img is None):
-                continue
-            images.append(img)
-            labels.append(label)
-            i += 1
-            if (i == BATCH_SIZE):
-                max_image_len = max([x.shape[1] for x in images])
-                max_label_len = max([len(x) for x in labels])
-                if images_wide_enough(images, labels):
-                    original_image_lengths_after_pooling = np.array([x.shape[1] // POOLING_RATIO for x in images])
-                    original_label_lens = np.array([len(x) for x in labels])
-                    images = [pad_img_horizontal(x, max_image_len) for x in images]
-                    labels = [encode_str(x) for x in labels]
-                    labels = [pad_label(x, max_label_len) for x in labels]
-                    images = np.array(images)
-                    labels = np.array(labels)
-                    inputs_fit = {
-                        'padded_images': images,
-                        'padded_labels': labels,
-                        'original_image_lengths_after_pooling': original_image_lengths_after_pooling,
-                        'original_label_lengths': original_label_lens
-                    }
-                    outputs_fit = { 'ctc': np.zeros([BATCH_SIZE]) } 
-                    yield inputs_fit, outputs_fit
-                images = []
-                labels = []
-                i = 0
+    for image_path in glob.iglob(dataset.DEBUG_DATASET_DIR_TRAIN + "*.jpg"):
+        img, label = load_image_label(image_path)
+        if (img is None):
+            continue
+        images.append(img)
+        labels.append(label)
+        i += 1
+        if (i == BATCH_SIZE):
+            max_image_len = max([x.shape[1] for x in images])
+            max_label_len = max([len(x) for x in labels])
+            if images_wide_enough(images, labels):
+                original_image_lengths_after_pooling = np.array([x.shape[1] // POOLING_RATIO for x in images])
+                original_label_lens = np.array([len(x) for x in labels])
+                images = [pad_img_horizontal(x, max_image_len) for x in images]
+                labels = [encode_str(x) for x in labels]
+                labels = [pad_label(x, max_label_len) for x in labels]
+                images = np.array(images)
+                labels = np.array(labels)
+                inputs_fit = {
+                    'padded_images': images,
+                    'padded_labels': labels,
+                    'original_image_lengths_after_pooling': original_image_lengths_after_pooling,
+                    'original_label_lengths': original_label_lens
+                }
+                outputs_fit = { 'ctc': np.zeros([BATCH_SIZE]) } 
+                yield inputs_fit, outputs_fit
+            images = []
+            labels = []
+            i = 0
 
 
 def ctc_lambda_func(args):
@@ -161,7 +162,27 @@ def get_activation_training_models():
 
 generator = train_generator()
 training_model, act_model = get_activation_training_models()
-training_model.fit(x = generator)
+
+def get_loss(model, val_data):
+    return 0
+
+def train_model(model, input_generator, val_data):
+    for i in range(0, EPOCHS):
+        print(F"Training EPOCH {i}")
+        model.fit(x = generator)
+        print(F"Validation loss: {get_loss(model, val_data)}")
+    model.save(MODEL_NAME)
+
+
+def char_pred_list_to_string(char_list):
+    previous_char = char_list[0]
+    char_list_no_repeated = [previous_char]
+    for i in range(1, len(char_list)):
+        if char_list[i] != previous_char:
+            char_list_no_repeated.append(char_list[i])
+        previous_char = char_list[i]
+    char_list_no_repeated = [char for char in char_list_no_repeated if char != ' ']
+    return char_list_no_repeated
 
 
 def print_image_text(image_path):
@@ -172,13 +193,14 @@ def print_image_text(image_path):
     input = { 'padded_images' : np.array([img]) }
     prediction = act_model.predict(input)
     best_indices = [ np.argmax(x) for x in prediction[0]]
-    word = [ CHAR_LIST[x] if x != BLANK_CHARACTER else ' ' for x in best_indices]
-    print(F"Original: {label}, predicted: {word}")
+    char_pred_list = [ CHAR_LIST[x] if x != BLANK_CHARACTER else ' ' for x in best_indices]
+    print(F"Original: {label}, predicted: {char_pred_list_to_string(char_pred_list)}")
 
+# training_model.fit(x=generator)
 
-print_image_text("./OCR_dataset_3/23_Wasp_85572.jpg")
-print_image_text("./OCR_dataset_3/21_AFFECTED_1392.jpg")
-print_image_text("./OCR_dataset_3/138_broodily_9767.jpg")
-print_image_text("./OCR_dataset_3/210_canoes_11214.jpg")
-print_image_text("./OCR_dataset_3/194_vicksburg_84553.jpg")
+# print_image_text("./OCR_dataset_3/23_Wasp_85572.jpg")
+# print_image_text("./OCR_dataset_3/21_AFFECTED_1392.jpg")
+# print_image_text("./OCR_dataset_3/138_broodily_9767.jpg")
+# print_image_text("./OCR_dataset_3/210_canoes_11214.jpg")
+# print_image_text("./OCR_dataset_3/194_vicksburg_84553.jpg")
 
