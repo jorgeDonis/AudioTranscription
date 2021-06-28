@@ -186,19 +186,19 @@ def get_activation_training_models():
 
 def get_loss(model, val_generator):
     predictions = []
-    for i in range(0, OCR_Dataset.num_validation_samples() // BATCH_SIZE):
-        predictions.append(model.predict(val_generator, steps=1))
     true_labels = []
     for filename in OCR_Dataset.get_val_ds_filenames():
         img, label = load_image_label(filename)
+        input = { 'padded_images' : np.array([img]) }
+        prediction = model.predict(input)
+        predictions.append(prediction)
         true_labels.append(label)
     predicted_labels = []
-    for batch_pred in predictions:
-            for prediction in batch_pred:
-                best_indices = [ np.argmax(x) for x in prediction ]
-                char_pred_list = [ CHAR_LIST[x] if x != BLANK_CHARACTER else ' ' for x in best_indices]
-                pred_word = char_pred_list_to_string(char_pred_list)
-                predicted_labels.append(pred_word)
+    for prediction in predictions:
+        best_indices = [ np.argmax(x) for x in prediction ]
+        char_pred_list = [ CHAR_LIST[x] if x != BLANK_CHARACTER else ' ' for x in best_indices]
+        pred_word = char_pred_list_to_string(char_pred_list)
+        predicted_labels.append(pred_word)
     total_loss = 0
     for i in range(0, len(predicted_labels)):
         l_d = levenshtein_distance(predicted_labels[i], true_labels[i])
