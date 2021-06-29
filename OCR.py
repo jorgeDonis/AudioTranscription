@@ -27,16 +27,16 @@ import tensorflow.keras as K
 import cv2
 import glob
 import re
+import itertools
 from os import system
 from Levenshtein import distance as levenshtein_distance
 
-NUM_IMAGES_DATASET = 384151
-BATCH_SIZE = 32
+BATCH_SIZE = 8
 IMG_HEIGHT = 32
 CHAR_LIST = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 BLANK_CHARACTER = len(CHAR_LIST)
 POOLING_RATIO = 8
-EPOCHS = 25
+EPOCHS = 11
 MODEL_NAME = "ocr_model.h5"
 
 def encode_str(txt):
@@ -133,23 +133,22 @@ def validation_generator():
     i = 0
     images = []
     labels = []
-    while True:
-        for image_path in OCR_Dataset.get_val_ds_filenames():
-            img, label = load_image_label(image_path)
-            if (img is None):
-                continue
-            images.append(img)
-            labels.append(label)
-            i += 1
-            if (i == BATCH_SIZE):
-                max_image_len = max([x.shape[1] for x in images])
-                if images_wide_enough(images, labels):
-                    images = [pad_img_horizontal(x, max_image_len) for x in images]
-                    images = np.array(images)
-                    yield { 'padded_images': images }
-                images = []
-                labels = []
-                i = 0
+    for image_path in OCR_Dataset.get_val_ds_filenames():
+        img, label = load_image_label(image_path)
+        if (img is None):
+            continue
+        images.append(img)
+        labels.append(label)
+        i += 1
+        if (i == BATCH_SIZE):
+            max_image_len = max([x.shape[1] for x in images])
+            if images_wide_enough(images, labels):
+                images = [pad_img_horizontal(x, max_image_len) for x in images]
+                images = np.array(images)
+                yield ({ 'padded_images': images }, labels)
+            images = []
+            labels = []
+            i = 0
 
 
 def ctc_lambda_func(args):
@@ -184,33 +183,33 @@ def get_activation_training_models():
 
     return training_model, act_model
 
+def decode_softmax(prediction):
+    best_indices = [ np.argmax(x) for x in prediction ]
+    char_pred_list = [ CHAR_LIST[x] if x != BLANK_CHARACTER else ' ' for x in best_indices]
+    return char_pred_list_to_string(char_pred_list)
+    
+
 def get_loss(model, val_generator):
     predictions = []
     true_labels = []
-    for filename in OCR_Dataset.get_val_ds_filenames():
-        img, label = load_image_label(filename)
-        input = { 'padded_images' : np.array([img]) }
-        prediction = model.predict(input)
-        predictions.append(prediction)
-        true_labels.append(label)
-    predicted_labels = []
-    for prediction in predictions:
-        best_indices = [ np.argmax(x) for x in prediction ]
-        char_pred_list = [ CHAR_LIST[x] if x != BLANK_CHARACTER else ' ' for x in best_indices]
-        pred_word = char_pred_list_to_string(char_pred_list)
-        predicted_labels.append(pred_word)
+    for batch_inputs, batch_labels in val_generator:
+        batch_predictions = model.predict(batch_inputs)
+        for prediction, label in zip(batch_predictions, batch_labels):
+            predictions.append(decode_softmax(prediction))
+            true_labels.append(label)
     total_loss = 0
-    for i in range(0, len(predicted_labels)):
-        l_d = levenshtein_distance(predicted_labels[i], true_labels[i])
-        print(F"{true_labels[i]} => {predicted_labels[i]} ({l_d / len(true_labels[i]):.2f})")
+    for i in range(0, len(predictions)):
+        l_d = levenshtein_distance(predictions[i], true_labels[i])
         total_loss += l_d / len(true_labels[i])
-    return total_loss / len(predicted_labels)
+    return total_loss / len(predictions)
 
 def train_model(train_model, act_model, input_generator, val_generator):
     for i in range(0, EPOCHS):
-        print(F"Training EPOCH {i}")
+        val_generator, val_generator_cp = itertools.tee(val_generator)
+        print(F"Training EPOCH {i + 1}")
         train_model.fit(x=input_generator, steps_per_epoch=OCR_Dataset.num_training_samples() / BATCH_SIZE, epochs=1)
         print(F"Validation loss: {get_loss(act_model, val_generator)}")
+        val_generator = val_generator_cp
     act_model.save(MODEL_NAME)
 
 def char_pred_list_to_string(char_list):
@@ -238,7 +237,5 @@ def print_image_text(image_path, model):
 
 generator = train_generator()
 training_model, act_model = get_activation_training_models()
-# train_model(training_model, act_model, generator, validation_generator())
-
-# print_image_text("./OCR_dataset_3/23_Wasp_85572.jpg", act_model)
+train_model(training_model, act_model, generator, validation_generator())
 
