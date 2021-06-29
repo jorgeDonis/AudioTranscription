@@ -16,7 +16,7 @@
 
 from tensorflow.keras import callbacks
 from tensorflow.python.keras.callbacks import ModelCheckpoint
-from OCR_Dataset import OCR_Dataset
+import OCR_Dataset
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -36,7 +36,7 @@ IMG_HEIGHT = 32
 CHAR_LIST = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 BLANK_CHARACTER = len(CHAR_LIST)
 POOLING_RATIO = 8
-EPOCHS = 11
+EPOCHS = 2
 MODEL_NAME = "ocr_model.h5"
 
 def encode_str(txt):
@@ -93,12 +93,11 @@ def images_wide_enough(imgs, labels):
 
 # Yields training data in batches
 def train_generator():
-    dataset = OCR_Dataset()
     i = 0
     images = []
     labels = []
     while True:
-        for image_path in glob.iglob(dataset.DEBUG_DATASET_DIR_TRAIN + "*.jpg"):
+        for image_path in glob.iglob(OCR_Dataset.DATASET_DIR_TRAIN + "*.jpg"):
             img, label = load_image_label(image_path)
             if (img is None):
                 continue
@@ -129,7 +128,6 @@ def train_generator():
                 i = 0
 
 def validation_generator():
-    dataset = OCR_Dataset()
     i = 0
     images = []
     labels = []
@@ -207,7 +205,7 @@ def train_model(train_model, act_model, input_generator, val_generator):
     for i in range(0, EPOCHS):
         val_generator, val_generator_cp = itertools.tee(val_generator)
         print(F"Training EPOCH {i + 1}")
-        train_model.fit(x=input_generator, steps_per_epoch=OCR_Dataset.num_training_samples() / BATCH_SIZE, epochs=1)
+        train_model.fit(x=input_generator, steps_per_epoch=OCR_Dataset.NO_TRAINING_SAMPLES / BATCH_SIZE, epochs=1)
         print(F"Validation loss: {get_loss(act_model, val_generator)}")
         val_generator = val_generator_cp
     act_model.save(MODEL_NAME)
@@ -224,18 +222,20 @@ def char_pred_list_to_string(char_list):
     return str.join(char_list_no_repeated)
 
 
-def print_image_text(image_path, model):
+def predict_img(image_path, model):
     img, label = load_image_label(image_path)
     if (img is None):
         print(F"Image {image_path} could not be loaded")
         return
     input = { 'padded_images' : np.array([img]) }
     prediction = model.predict(input)
-    best_indices = [ np.argmax(x) for x in prediction[0]]
-    char_pred_list = [ CHAR_LIST[x] if x != BLANK_CHARACTER else ' ' for x in best_indices]
-    print(F"Original: {label}, predicted: {char_pred_list_to_string(char_pred_list)}")
+    print(F"Original: {label}, predicted: {decode_softmax(prediction[0])}")
+
+OCR_Dataset.init()
 
 generator = train_generator()
 training_model, act_model = get_activation_training_models()
 train_model(training_model, act_model, generator, validation_generator())
+
+predict_img("OCR_dataset_test/2_alarming_1849.jpg", act_model)
 

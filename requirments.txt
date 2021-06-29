@@ -1,1 +1,2 @@
-pip install python-Levenshtein
+pip install python-Levenshtein matplotlib
+apt install libopencv-dev python3-opencv
