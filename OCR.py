@@ -31,12 +31,12 @@ import itertools
 from os import system
 from Levenshtein import distance as levenshtein_distance
 
-BATCH_SIZE = 8
+BATCH_SIZE = 16
 IMG_HEIGHT = 32
 CHAR_LIST = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 BLANK_CHARACTER = len(CHAR_LIST)
 POOLING_RATIO = 8
-EPOCHS = 2
+EPOCHS = 9
 MODEL_NAME = "ocr_model.h5"
 
 def encode_str(txt):
@@ -72,6 +72,12 @@ def pad_label(label, max_label_len):
 def show_img(img):
     plt.imshow(img, cmap='gray')
     plt.show()
+
+def show_img(img, original_label, predicted_label):
+    plt.imshow(img, cmap='gray')
+    plt.title(F"Original: \'{original_label}\'\n Predicted: \'{predicted_label}\'")
+    plt.show()
+
 
 def num_repeated_chars(label):
     num_repeated_chars = 0
@@ -231,11 +237,19 @@ def predict_img(image_path, model):
     prediction = model.predict(input)
     print(F"Original: {label}, predicted: {decode_softmax(prediction[0])}")
 
+def test_all_images(model):
+    for image_path in OCR_Dataset.get_val_ds_filenames():
+        img, label = load_image_label(image_path)
+        input = { 'padded_images' : np.array([img]) }
+        predicted_word = decode_softmax(model.predict(input)[0])
+        show_img(img, label, predicted_word)
+
+
 OCR_Dataset.init()
 
 generator = train_generator()
 training_model, act_model = get_activation_training_models()
-train_model(training_model, act_model, generator, validation_generator())
-
-predict_img("OCR_dataset_test/2_alarming_1849.jpg", act_model)
-
+# train_model(training_model, act_model, generator, validation_generator())
+model = tf.keras.models.load_model("ocr_model_0.28_loss.h5")
+# predict_img("OCR_dataset_test/2_alarming_1849.jpg", act_model)
+test_all_images(model)
