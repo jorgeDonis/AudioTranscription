@@ -15,21 +15,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-import numpy as np
-import cv2
-from MTDSample import MTDSample
-import BatchGenerator
+import MTDDataset
 
-def show_img(img) -> None:
-    cv2.imshow('img', img)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-MTD_ids = ['0961', '3795', '4893', '5165', '5853', '6157', '6200', '6237', '6242', '9525']
-
-# for _id in MTD_ids:
-#     sample = MTDSample(_id)
-#     sample.save_spectogram_into_dataset()
-
-padded_imgs, padded_humdrums, original_img_lengths, original_hum_lengths = BatchGenerator.gen_batch(MTD_ids)
-
+MTDDataset.export_all_spectrograms()

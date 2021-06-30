@@ -1,0 +1,2 @@
+pip install python-Levenshtein matplotlib librosa
+apt install python3-opencv
