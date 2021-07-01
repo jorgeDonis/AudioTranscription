@@ -14,13 +14,3 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-import cv2
-import numpy as np
-
-def preprocess_img(img):
-    img = img / 255
-    return img
-
-#Pads with black pixels (0's)
-def pad_img_horizontal(img, max_img_len):
-    return np.pad(img, ( (0, 0), (0, max_img_len - img.shape[1]), (0, 0) ), 'constant', constant_values= ( (0, 0), (0, 0), (0, 0) ))

@@ -15,10 +15,12 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 from Parameters import Parameters as PARAM
+import ImageProcessing
 
 import os
 import PIL
 
+import cv2
 import numpy as np
 import librosa
 import librosa.display
@@ -68,3 +70,15 @@ class PrimusSample:
         pil_image.save(filename)
         self.audio_img_path = filename
         os.system(F'rm {self.TEMP_IMG_FILENAME}')
+
+    def read_img(self):
+        if self.audio_img_path != 'IMG_NOT_CREATED':
+            img = cv2.imread(self.audio_img_path)
+            if img is None:
+                raise Exception(F'Could not read image {self.audio_img_path}')
+            return img
+        else:
+            raise Exception(F'Cannot read spectrogram from {self.id} because it doesn\'t exist')
+    
+    def get_preprocesssed_img(self):
+        return ImageProcessing.preprocess_img(self.read_img())

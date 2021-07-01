@@ -16,28 +16,23 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 import PrimusDataset
-import random
-import pickle
+import cv2
+import matplotlib.pyplot as plt
 
-ids_with_img = []
+def show_img(img):
+    plt.imshow(img)
+    plt.show()
 
-i = 0
-for id in PrimusDataset.get_all_primus_ids():
-    i += 1
-    if i <= 25005:
-        ids_with_img.append(id)
-
-test_samples = 1000
-training_samples = 10000
-
-ids_test = [ ids_with_img.pop(random.randrange(len(ids_with_img))) for id in range(test_samples) ]
-ids_train = [ ids_with_img.pop(random.randrange(len(ids_with_img))) for id in range(training_samples) ]
-
-split_ids = (ids_train, ids_test)
-
-with open('dataset_train_test_ids.bin', 'wb') as file:
-    pickle.dump(split_ids, file, protocol=pickle.HIGHEST_PROTOCOL)
-
-
-
-
+for inputs_fit, outputs_fit in PrimusDataset.train_generator():
+    imgs = inputs_fit['padded_images']
+    encodings = inputs_fit['padded_encodings']
+    img_lens = inputs_fit['original_image_lengths_after_pooling']
+    encodings_lens = inputs_fit['original_encoding_lengths']
+    for img, encoding, img_len, encoding_len in zip(imgs, encodings, img_lens, encodings_lens):
+        if img_len < encoding_len:
+            print("ENCODING")
+            print(encoding)
+            print(F"Img len: {img_len}")
+            print(F"Encoding len: {encoding_len}")
+            show_img(img)
+    
