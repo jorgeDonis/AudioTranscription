@@ -14,8 +14,9 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+import sys
+from PrimusSample import PrimusSample
 from typing import List
-from tensorflow.python.keras.engine import training
 from Parameters import Parameters as PARAM
 import PrimusDataset
 
@@ -36,13 +37,13 @@ def _ctc_lambda_func(args):
     return K.backend.ctc_batch_cost(encodings, y_pred, input_length, encoding_length)
 
 def get_activation_training_models():
-    inputs = Layer.Input(shape=(PARAM['SPEC']['IMG_HEIGHT'], None, 3), name='padded_images')
+    inputs = Layer.Input(shape=(PARAM['SPEC']['IMG_HEIGHT'], None, 1), name='padded_images')
 
     conv_1 = Layer.Conv2D(64, (3,3), activation = 'relu', padding='same')(inputs)
     pool_1 = Layer.MaxPool2D(pool_size=(2, 2), strides=2)(conv_1)
     conv_2 = Layer.Conv2D(128, (3,3), activation = 'relu', padding='same')(pool_1)
     pool_2 = Layer.MaxPool2D(pool_size=(2, 2), strides=2)(conv_2)
-    conv_3 = Layer.Conv2D(256, (3,3), activation = 'relu', padding='same')(pool_2)
+    conv_3 = Layer.Conv2D(128, (3,3), activation = 'relu', padding='same')(pool_2)
     batch_norm_1 = Layer.BatchNormalization()(conv_3)
     pool_3 = Layer.MaxPool2D(pool_size=(2, 2))(batch_norm_1)
     conv_4 = Layer.Conv2D(256, (2,2), activation = 'relu', padding='same')(pool_3)
@@ -87,12 +88,13 @@ def _get_loss(model, val_generator):
         batch_predictions = model.predict(batch_inputs)
         for prediction, encoding in zip(batch_predictions, batch_encodings):
             predictions.append(_decode_softmax(prediction))
-            true_encodings.append(encoding)
+            true_encodings.append(semantic_translator.decode_semantic_class_index_seq(encoding))
     total_loss = 0
     for i in range(0, len(predictions)):
-        pred_full_text = 
-        l_d = levenshtein_distance(predictions[i], true_encodings[i])
-        total_loss += l_d / len(true_encodings[i])
+        pred_full_text = '\n'.join(predictions[i])
+        true_full_text = '\n'.join(true_encodings[i])
+        l_d = levenshtein_distance(pred_full_text, true_full_text)
+        total_loss += l_d / len(true_full_text)
     return total_loss / len(predictions)
 
 def train_model(train_model, act_model, input_generator, val_generator, saved_model_filename="cnn.h5"):
@@ -103,3 +105,16 @@ def train_model(train_model, act_model, input_generator, val_generator, saved_mo
         print(F"Validation loss: {_get_loss(act_model, val_generator)}")
         val_generator = val_generator_cp
     act_model.save(saved_model_filename)
+
+def test_all_images(model):
+    train_ids, test_ids = PrimusDataset.get_train_test_ids()
+    for id in test_ids:
+        sample = PrimusSample(id)
+        img = sample.get_preprocesssed_img()
+        input = { 'padded_images' : np.array([img]) }
+        prediction = _decode_softmax(model.predict(input)[0])
+        print('ORIGINAL SCORE:')
+        print('\n'.join(sample.get_semantic_tokens()))
+        print('PREDICTED SCORE:')
+        print('\n'.join(prediction))
+        sys.stdin.read(1)

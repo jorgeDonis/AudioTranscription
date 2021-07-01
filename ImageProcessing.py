@@ -18,6 +18,8 @@ import cv2
 import numpy as np
 
 def preprocess_img(img):
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) 
+    img = np.expand_dims(img, axis=2)
     img = img / 255
     return img
 
