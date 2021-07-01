@@ -152,7 +152,7 @@ def _gen_val_batch(images):
     return { 'padded_images' : np.array(images) }
 
 #Infinite generator
-def train_generator() -> Generator:
+def train_generator():
     train_ids, test_ids = get_train_test_ids()
     semantic_translator = get_semantic_translator()
     i = 0
@@ -174,6 +174,9 @@ def train_generator() -> Generator:
                 encodings.clear()
                 i = 0
 
+
+def val_generator_factory() -> Generator:
+    return validation_generator()
 
 def validation_generator():
     semantic_translator = get_semantic_translator()
