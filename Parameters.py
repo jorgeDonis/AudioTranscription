@@ -7,7 +7,7 @@ Parameters = {
     'SPEC' :
     {
         'IMG_WIDTH_PER_FRAME'   :   1       ,   #integer value
-        'IMG_HEIGHT'            :   356     ,
-        'Y_AXIS_SCALE'          :   'log'    #linear or log
+        'IMG_HEIGHT'            :   256     ,
+        'Y_AXIS_SCALE'          :   'linear'    #linear or log
     }
 }

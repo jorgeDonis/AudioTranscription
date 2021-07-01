@@ -1,2 +1,3 @@
 pip install python-Levenshtein matplotlib librosa
-apt install python3-opencv
+apt install python3-opencv freepats timidity timidity-interfaces-extra
+
