@@ -106,6 +106,10 @@ def get_train_test_ids():
     with open('dataset_train_test_ids.bin', 'rb') as file:
         return pickle.load(file)
 
+def num_train_samples():
+    train_ids, test_ids = get_train_test_ids()
+    return len(train_ids)
+
 def _num_repeated_tokens(class_index_seq):
     num_repeated_tokens = 0
     if len(class_index_seq) == 0:
@@ -128,7 +132,7 @@ def _pad_encoding(encoding, new_length, blank_token):
         encoding.append(blank_token)
     return encoding
 
-def _gen_batch(images, encodings, blank_token):
+def _gen_train_batch(images, encodings, blank_token):
     max_img_len = max([ x.shape[1] for x in images ])
     max_encoding_len = max([ len(x) for x in encodings ])
     original_image_lengths_after_pooling = np.array([ x.shape[1] // PARAM['TRAINING']['POOLING_RATIO'] for x in images ])
@@ -141,6 +145,11 @@ def _gen_batch(images, encodings, blank_token):
         'original_image_lengths_after_pooling' : original_image_lengths_after_pooling,
         'original_encoding_lengths' : original_encoding_lengths
     }
+
+def _gen_val_batch(images):
+    max_img_len = max([ x.shape[1] for x in images ])
+    images = [ ImageProcessing.pad_img_horizontal(x, max_img_len) for x in images ]
+    return { 'padded_images' : np.array(images) }
 
 #Infinite generator
 def train_generator() -> Generator:
@@ -158,9 +167,30 @@ def train_generator() -> Generator:
             i += 1
             if i == PARAM['TRAINING']['BATCH_SIZE']:
                 if _images_wide_enough(images, encodings):
-                    inputs_fit = _gen_batch(images, encodings, semantic_translator.blank_class)
+                    inputs_fit = _gen_train_batch(images, encodings, semantic_translator.blank_class)
                     outputs_fit = { 'ctc' : np.zeros([PARAM['TRAINING']['BATCH_SIZE']]) }
                     yield inputs_fit, outputs_fit
                 images.clear()
                 encodings.clear()
                 i = 0
+
+
+def validation_generator():
+    semantic_translator = get_semantic_translator()
+    train_ids, test_ids = get_train_test_ids()
+    i = 0
+    images = []
+    encodings = []
+    for id in test_ids:
+        sample = PrimusSample(id)
+        img = sample.get_preprocesssed_img()
+        images.append(img)
+        encodings.append(semantic_translator.encode_semantic_token_seq(sample.get_semantic_tokens()))
+        i += 1
+        if i == PARAM['TRAINING']['BATCH_SIZE']:
+            if _images_wide_enough(images, encodings):
+                input_val = _gen_val_batch(images)
+                yield (input_val, encodings)
+            images.clear()
+            encodings.clear()
+            i = 0
