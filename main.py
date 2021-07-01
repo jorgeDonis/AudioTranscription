@@ -41,11 +41,11 @@ import Model
 import os
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
-activation_model, training_model = Model.get_activation_training_models()
-training_generator = PrimusDataset.train_generator()
-validation_generator = PrimusDataset.validation_generator()
+# activation_model, training_model = Model.get_activation_training_models()
+# training_generator = PrimusDataset.train_generator()
+# validation_generator = PrimusDataset.validation_generator()
 
-Model.train_model(training_model, activation_model, training_generator, validation_generator)
+# Model.train_model(training_model, activation_model, training_generator, validation_generator)
 
-# model = tf.keras.models.load_model('cnn.h5')
-# Model.test_all_images(model)
+model = tf.keras.models.load_model('cnn.h5')
+Model.test_all_images(model)

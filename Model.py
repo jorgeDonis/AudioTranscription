@@ -26,6 +26,7 @@ import tensorflow.keras.layers as Layer
 
 import itertools
 
+from tabulate import tabulate
 from Levenshtein import distance as levenshtein_distance
 
 import numpy as np
@@ -106,6 +107,15 @@ def train_model(train_model, act_model, input_generator, val_generator, saved_mo
         val_generator = val_generator_cp
     act_model.save(saved_model_filename)
 
+def _print_predicted_vs_true(predicted, true):
+    max_len = max(len(predicted), len(true))
+    if max_len == len(predicted):
+        true.append([ ' ' for i in range(0, max_len - len(true)) ])
+    else:
+        predicted.append([ ' ' for i in range(0, max_len - len(predicted)) ])
+    table = [ [true_token, predicted_token] for predicted_token, true_token in zip(predicted, true) ]
+    print(tabulate(table, headers=['TRUE', 'PREDICTED']))
+
 def test_all_images(model):
     train_ids, test_ids = PrimusDataset.get_train_test_ids()
     for id in test_ids:
@@ -113,8 +123,5 @@ def test_all_images(model):
         img = sample.get_preprocesssed_img()
         input = { 'padded_images' : np.array([img]) }
         prediction = _decode_softmax(model.predict(input)[0])
-        print('ORIGINAL SCORE:')
-        print('\n'.join(sample.get_semantic_tokens()))
-        print('PREDICTED SCORE:')
-        print('\n'.join(prediction))
+        _print_predicted_vs_true(prediction, sample.get_semantic_tokens())
         sys.stdin.read(1)
