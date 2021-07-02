@@ -14,16 +14,18 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-from numpy.core.numerictypes import maximum_sctype
 from Parameters import Parameters as PARAM
 from PrimusSample import PrimusSample
 import ImageProcessing
 
 from typing import Generator, List, Tuple
 import os
-import re
 import numpy as np
 import pickle
+import random
+
+_SEMANTIC_TRANSLATOR_FILEPATH = './semantic_translator.bin'
+_DATASET_IDS_BINARY = 'train_test_ids.bin'
 
 class SemanticTranslator:
 
@@ -43,9 +45,6 @@ class SemanticTranslator:
 
     def decode_semantic_class_index_seq(self, class_index_seq) -> List:
         return [ self.decode_semantic_class_index(class_index) for class_index in class_index_seq ]
-
-
-_SEMANTIC_TRANSLATOR_FILEPATH = './semantic_translator.bin'
 
 def get_all_primus_ids():
     return sorted(os.listdir('./Complete_Primus'))
@@ -103,12 +102,22 @@ def get_semantic_translator() -> SemanticTranslator:
             return pickle.load(file)
 
 def get_train_test_ids():
-    with open('dataset_train_test_ids.bin', 'rb') as file:
+    with open(_DATASET_IDS_BINARY, 'rb') as file:
         return pickle.load(file)
 
 def num_train_samples():
     train_ids, test_ids = get_train_test_ids()
     return len(train_ids)
+
+#generates binary file which is used in generators
+def gen_train_test_ids(no_train_samples, no_test_samples):
+    ids = os.listdir("./Complete_Primus")
+    if no_train_samples + no_test_samples > len(ids):
+        raise Exception(F'Dataset has only {len(no_train_samples)} total samples')
+    ids_train = [ ids.pop(random.randrange(len(ids))) for id in range(no_train_samples) ]
+    ids_test = [ ids.pop(random.randrange(len(ids))) for id in range(no_test_samples) ]
+    with open(_DATASET_IDS_BINARY, 'wb') as file:
+        pickle.dump((ids_train, ids_test), file)
 
 def _num_repeated_tokens(class_index_seq):
     num_repeated_tokens = 0

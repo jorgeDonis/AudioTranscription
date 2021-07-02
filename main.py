@@ -47,5 +47,5 @@ os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 # Model.train_model(training_model, activation_model, training_generator, validation_generator_factory)
 
-model = tf.keras.models.load_model('cnn.h5')
-Model.test_all_images(model)
+# model = tf.keras.models.load_model('cnn.h5')
+# Model.test_all_images(model)
