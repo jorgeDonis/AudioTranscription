@@ -1,2 +1,2 @@
-pip install python-Levenshtein matplotlib librosa tabulate
+pip install matplotlib librosa tabulate edit-distance
 apt install python3-opencv freepats timidity timidity-interfaces-extra

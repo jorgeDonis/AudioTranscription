@@ -21,31 +21,16 @@ import cv2
 import matplotlib.pyplot as plt
 import Model
 
-# def show_img(img):
-#     plt.imshow(img)
-#     plt.show()
-
-# for inputs_fit, outputs_fit in PrimusDataset.train_generator():
-#     imgs = inputs_fit['padded_images']
-#     encodings = inputs_fit['padded_encodings']
-#     img_lens = inputs_fit['original_image_lengths_after_pooling']
-#     encodings_lens = inputs_fit['original_encoding_lengths']
-#     for img, encoding, img_len, encoding_len in zip(imgs, encodings, img_lens, encodings_lens):
-#         if img_len < encoding_len:
-#             print("ENCODING")
-#             print(encoding)
-#             print(F"Img len: {img_len}")
-#             print(F"Encoding len: {encoding_len}")
-#             show_img(img)
+# PrimusDataset.gen_train_test_ids(75000, 5000)
 
 import os
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
-# activation_model, training_model = Model.get_activation_training_models()
-# training_generator = PrimusDataset.train_generator()
-# validation_generator_factory = PrimusDataset.val_generator_factory
+activation_model, training_model = Model.get_activation_training_models()
+training_generator = PrimusDataset.train_generator()
+validation_generator_factory = PrimusDataset.val_generator_factory
 
-# Model.train_model(training_model, activation_model, training_generator, validation_generator_factory)
+Model.train_model(training_model, activation_model, training_generator, validation_generator_factory)
 
-# model = tf.keras.models.load_model('cnn.h5')
-# Model.test_all_images(model)
+model = tf.keras.models.load_model('cnn.h5')
+Model.test_all_images(model)

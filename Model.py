@@ -14,6 +14,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+import os
 import sys
 from PrimusSample import PrimusSample
 from typing import List
@@ -24,10 +25,8 @@ import tensorflow as tf
 import tensorflow.keras as K
 import tensorflow.keras.layers as Layer
 
-import itertools
-
 from tabulate import tabulate
-from Levenshtein import distance as levenshtein_distance
+import edit_distance
 
 import numpy as np
 
@@ -40,17 +39,17 @@ def _ctc_lambda_func(args):
 def get_activation_training_models():
     inputs = Layer.Input(shape=(PARAM['SPEC']['IMG_HEIGHT'], None, 1), name='padded_images')
 
-    conv_1 = Layer.Conv2D(64, (3,3), activation = 'relu', padding='same')(inputs)
+    conv_1 = Layer.Conv2D(8, (3,3), activation = 'relu', padding='same')(inputs)
     pool_1 = Layer.MaxPool2D(pool_size=(2, 2), strides=2)(conv_1)
-    conv_2 = Layer.Conv2D(64, (3,3), activation = 'relu', padding='same')(pool_1)
+    conv_2 = Layer.Conv2D(32, (3,3), activation = 'relu', padding='same')(pool_1)
     pool_2 = Layer.MaxPool2D(pool_size=(2, 2), strides=2)(conv_2)
-    conv_3 = Layer.Conv2D(64, (3,3), activation = 'relu', padding='same')(pool_2)
+    conv_3 = Layer.Conv2D(128, (3,3), activation = 'relu', padding='same')(pool_2)
     batch_norm_1 = Layer.BatchNormalization()(conv_3)
     pool_3 = Layer.MaxPool2D(pool_size=(2, 2))(batch_norm_1)
-    conv_4 = Layer.Conv2D(128, (3,3), activation = 'relu', padding='same')(pool_3)
+    conv_4 = Layer.Conv2D(256, (3,3), activation = 'relu', padding='same')(pool_3)
     dropout = Layer.Dropout(0.4) (conv_4)
     permute = Layer.Permute((2, 1, 3))(dropout)
-    reshape = Layer.Reshape((-1, 128 * PARAM['SPEC']['IMG_HEIGHT'] // PARAM['TRAINING']['POOLING_RATIO']))(permute)
+    reshape = Layer.Reshape((-1, 256 * PARAM['SPEC']['IMG_HEIGHT'] // PARAM['TRAINING']['POOLING_RATIO']))(permute)
     blstm_1 = Layer.Bidirectional(Layer.LSTM(units = 128, input_shape=[None], return_sequences=True, dropout=0.3))(reshape)
     batch_norm_2 = Layer.BatchNormalization()(blstm_1)
     blstm_2 = Layer.Bidirectional(Layer.LSTM(units = 128, input_shape=[None], return_sequences=True, dropout=0.3))(batch_norm_2)
@@ -77,35 +76,46 @@ def _remove_repeated_tokens(sequence):
         previous_token = sequence[i]
     return sequence_no_repeated
 
-def _decode_softmax(prediction) -> List[str]:
+def _decode_softmax_tokens(prediction) -> List[str]:
     best_indices = [ np.argmax(x) for x in prediction ]
     indices_no_repeated = _remove_repeated_tokens(best_indices)
     token_pred_list = [ semantic_translator.decode_semantic_class_index(x) for x in indices_no_repeated if x != semantic_translator.blank_class]
     return token_pred_list
-    
+
+def _decode_softmax_indices(prediction) -> List[int]:
+    best_indices = [ np.argmax(x) for x in prediction ]
+    indices_no_repeated = _remove_repeated_tokens(best_indices)
+    class_pred_list = [ x for x in indices_no_repeated if x != semantic_translator.blank_class]
+    return class_pred_list
+
+def _edit_distance(a: List, b: List) -> int:
+    sm = edit_distance.SequenceMatcher(a, b)
+    return sm.distance()
+
 def _get_loss(model, val_generator):
     predictions = []
     true_encodings = []
     for batch_inputs, batch_encodings in val_generator:
         batch_predictions = model.predict(batch_inputs)
         for prediction, encoding in zip(batch_predictions, batch_encodings):
-            predictions.append(_decode_softmax(prediction))
-            true_encodings.append(semantic_translator.decode_semantic_class_index_seq(encoding))
+            predictions.append(_decode_softmax_indices(prediction))
+            true_encodings.append(encoding)
     total_loss = 0
     for i in range(0, len(predictions)):
-        pred_full_text = '\n'.join(predictions[i])
-        true_full_text = '\n'.join(true_encodings[i])
-        l_d = levenshtein_distance(pred_full_text, true_full_text)
-        total_loss += l_d / len(true_full_text)
+        l_d = _edit_distance(true_encodings[i], predictions[i])
+        total_loss += l_d / len(true_encodings[i])
     return total_loss / len(predictions)
 
 def train_model(train_model, act_model, input_generator, val_generator_factory, saved_model_filename="cnn.h5"):
+    lowest_val_loss = float('inf')
     for i in range(0, PARAM['TRAINING']['EPOCHS']):
         val_generator = val_generator_factory()
         print(F"Training EPOCH {i + 1}")
         train_model.fit(x=input_generator, steps_per_epoch=PrimusDataset.num_train_samples() / PARAM['TRAINING']['BATCH_SIZE'], epochs=1)
-        print(F"Validation loss: {_get_loss(act_model, val_generator)}")
-    act_model.save(saved_model_filename)
+        batch_val_loss = _get_loss(act_model, val_generator)
+        print(F"Validation loss: {batch_val_loss}")
+        if batch_val_loss < lowest_val_loss:
+            act_model.save(saved_model_filename)
 
 def _print_predicted_vs_true(predicted, true):
     max_len = max(len(predicted), len(true))
@@ -122,6 +132,6 @@ def test_all_images(model):
         sample = PrimusSample(id)
         img = sample.get_preprocesssed_img()
         input = { 'padded_images' : np.array([img]) }
-        prediction = _decode_softmax(model.predict(input)[0])
+        prediction = _decode_softmax_tokens(model.predict(input)[0])
         _print_predicted_vs_true(prediction, sample.get_semantic_tokens())
         sys.stdin.read(1)
