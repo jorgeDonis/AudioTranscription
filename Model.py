@@ -39,21 +39,21 @@ def _ctc_lambda_func(args):
 def get_activation_training_models():
     inputs = Layer.Input(shape=(PARAM['SPEC']['IMG_HEIGHT'], None, 1), name='padded_images')
 
-    conv_1 = Layer.Conv2D(8, (3,3), activation = 'relu', padding='same')(inputs)
+    conv_1 = Layer.Conv2D(64, (3,3), activation = 'relu', padding='same')(inputs)
     pool_1 = Layer.MaxPool2D(pool_size=(2, 2), strides=2)(conv_1)
-    conv_2 = Layer.Conv2D(32, (3,3), activation = 'relu', padding='same')(pool_1)
-    pool_2 = Layer.MaxPool2D(pool_size=(2, 2), strides=2)(conv_2)
-    conv_3 = Layer.Conv2D(128, (3,3), activation = 'relu', padding='same')(pool_2)
-    batch_norm_1 = Layer.BatchNormalization()(conv_3)
+    conv_2 = Layer.Conv2D(128, (3,3), activation = 'relu', padding='same')(pool_1)
+    batch_norm_1 = Layer.BatchNormalization()(conv_2)
     pool_3 = Layer.MaxPool2D(pool_size=(2, 2))(batch_norm_1)
     conv_4 = Layer.Conv2D(256, (3,3), activation = 'relu', padding='same')(pool_3)
-    dropout = Layer.Dropout(0.4) (conv_4)
+    pool_4 = Layer.MaxPool2D(pool_size=(2, 2))(conv_4)
+    dropout = Layer.Dropout(0.1)(pool_4)
     permute = Layer.Permute((2, 1, 3))(dropout)
     reshape = Layer.Reshape((-1, 256 * PARAM['SPEC']['IMG_HEIGHT'] // PARAM['TRAINING']['POOLING_RATIO']))(permute)
     blstm_1 = Layer.Bidirectional(Layer.LSTM(units = 128, input_shape=[None], return_sequences=True, dropout=0.3))(reshape)
     batch_norm_2 = Layer.BatchNormalization()(blstm_1)
     blstm_2 = Layer.Bidirectional(Layer.LSTM(units = 128, input_shape=[None], return_sequences=True, dropout=0.3))(batch_norm_2)
-    outputs = Layer.Dense(semantic_translator.blank_class + 1, activation = 'softmax')(blstm_2)
+    dense_1 = Layer.Dense(1024, activation='relu') (blstm_2)
+    outputs = Layer.Dense(semantic_translator.blank_class + 1, activation = 'softmax')(dense_1)
     act_model = tf.keras.Model(inputs, outputs)
 
     encodings = Layer.Input(dtype='float32', shape=[None], name='padded_encodings')
@@ -106,9 +106,13 @@ def _get_loss(model, val_generator):
         total_loss += l_d / len(true_encodings[i])
     return total_loss / len(predictions)
 
-def train_model(train_model, act_model, input_generator, val_generator_factory, saved_model_filename="cnn.h5"):
+def train_model(train_model, act_model, input_generator, val_generator_factory, 
+                saved_model_filename="cnn.h5", max_no_epochs_without_improv=4):
     lowest_val_loss = float('inf')
+    no_epochs_without_improv = 0
     for i in range(0, PARAM['TRAINING']['EPOCHS']):
+        if no_epochs_without_improv == max_no_epochs_without_improv:
+            break
         val_generator = val_generator_factory()
         print(F"Training EPOCH {i + 1}")
         train_model.fit(x=input_generator, steps_per_epoch=PrimusDataset.num_train_samples() / PARAM['TRAINING']['BATCH_SIZE'], epochs=1)
@@ -116,6 +120,8 @@ def train_model(train_model, act_model, input_generator, val_generator_factory, 
         print(F"Validation loss: {batch_val_loss}")
         if batch_val_loss < lowest_val_loss:
             act_model.save(saved_model_filename)
+        else:
+            no_epochs_without_improv += 1
 
 def _print_predicted_vs_true(predicted, true):
     max_len = max(len(predicted), len(true))

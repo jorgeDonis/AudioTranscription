@@ -20,6 +20,7 @@ import numpy as np
 def preprocess_img(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) 
     img = np.expand_dims(img, axis=2)
+    # img = cv2.resize(img, (img.shape[1] // 2, img.shape[0]), interpolation=cv2.INTER_LANCZOS4)
     img = img / 255
     return img
 
