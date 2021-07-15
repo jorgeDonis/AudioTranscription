@@ -17,12 +17,18 @@
 import cv2
 import numpy as np
 
+import tensorflow as tf
+
 def preprocess_img(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) 
     img = np.expand_dims(img, axis=2)
+    # img = cv2.resize(img, (img.shape[1] // 2, img.shape[0]), interpolation=cv2.INTER_LANCZOS4)
     img = img / 255
     return img
 
 #Pads with black pixels (0's)
 def pad_img_horizontal(img, max_img_len):
     return np.pad(img, ( (0, 0), (0, max_img_len - img.shape[1]), (0, 0) ), 'constant', constant_values= ( (0, 0), (0, 0), (0, 0) ))
+
+def preprocess_all_dataset(img):
+    return

@@ -113,6 +113,8 @@ def train_model(train_model, act_model, input_generator, val_generator_factory,
     lowest_val_loss = float('inf')
     histo_file = open(training_history_filename, 'a')
     for i in range(0, PARAM['TRAINING']['EPOCHS']):
+        if no_epochs_without_improv == max_no_epochs_without_improv:
+            break
         val_generator = val_generator_factory()
         print(F"Training EPOCH {i + 1}")
         history = train_model.fit(x=input_generator, steps_per_epoch=PrimusDataset.num_train_samples() / PARAM['TRAINING']['BATCH_SIZE'], epochs=1)
@@ -122,6 +124,8 @@ def train_model(train_model, act_model, input_generator, val_generator_factory,
         print(F"Validation loss: {batch_val_loss}")
         if batch_val_loss < lowest_val_loss:
             act_model.save(saved_model_filename)
+        else:
+            no_epochs_without_improv += 1
 
 def _print_predicted_vs_true(predicted, true):
     max_len = max(len(predicted), len(true))
