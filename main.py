@@ -28,12 +28,13 @@ import Model
 import os
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
-# activation_model, training_model = Model.get_activation_training_models()
-# training_generator = PrimusDataset.train_generator()
-# validation_generator_factory = PrimusDataset.val_generator_factory
+activation_model, training_model = Model.get_activation_training_models()
+activation_model.summary()
+training_generator = PrimusDataset.train_generator()
+validation_generator_factory = PrimusDataset.val_generator_factory
 
-# Model.train_model(training_model, activation_model, training_generator, validation_generator_factory)
+Model.train_model(training_model, activation_model, training_generator, validation_generator_factory)
 
-model = tf.keras.models.load_model('cnn_muy_wena.h5')
-model.summary()
-# Model.test_all_images(model)
+Model.test_all_images(activation_model)
+
+# model = tf.keras.models.load_model('cnn_muy_wena.h5')
