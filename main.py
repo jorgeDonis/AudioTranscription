@@ -52,57 +52,56 @@ window_length = 1024
 hop_length = 128
 img_height = 192
 
-plt.clf()
-plt.cla()
-plt.close()
-plt.axis('off')
-
-sample = PrimusDataset.get_random_sample()
-y, sr = librosa.load(sample.audio_wav_path, mono=True)
-# S = librosa.stft(y, n_fft=n_fft, hop_length=hop_length, win_length=window_length)
-S = librosa.feature.melspectrogram(y, sr=sr, n_fft=n_fft, hop_length=hop_length, win_length=window_length)
-S_db = librosa.amplitude_to_db(S)
-vmin = np.amin(S_db)
-vmax = np.amax(S_db)
-print(F'Minimmum value: {vmin}, Maximmum value: {vmax}')
-
-img = librosa.display.specshow(S_db, fmin=fmin, fmax=fmax, x_axis='time', y_axis='mel',
-                                    hop_length=hop_length, vmin=-70, vmax=8)
-
-# fig, ax = plt.subplots(nrows=2, ncols=1, sharex=True)
-# img = librosa.display.specshow(S_db, fmin=fmin, fmax=fmax, x_axis='time', y_axis='mel',
-#                                  hop_length=hop_length, cmap='gist_heat', vmin=-70, vmax=8, ax=ax[0])
-# img = librosa.display.specshow(S_db, fmin=fmin, fmax=fmax, x_axis='time', y_axis='log',
-#                                  hop_length=hop_length, cmap='gist_heat', vmin=-70, vmax=8, ax=ax[1])
-
-# os.system(F'cvlc {sample.audio_wav_path}')
-# plt.show()
-img.figure.savefig('temp_img.png', bbox_inches='tight', pad_inches=0)
-img = cv2.imread('temp_img.png')
-img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) 
-downscale_ratio = img_height / img.shape[0]
-img = cv2.resize(img, (math.ceil(img.shape[1] * downscale_ratio), img_height), interpolation=cv2.INTER_LANCZOS4)
-img = np.expand_dims(img, axis=2)
-img = img / 255
-
-first_black_col = img.shape[1] - 1
-for i in range(0, img.shape[1]):
-    column_is_black = True
-    for j in range(0, img_height):
-        if img[j][img.shape[1] - i - 1] != 0:
-            column_is_black = False
-            break
-    if column_is_black:
-        first_black_col = img.shape[1] - i - 1
-
-print(F'first black column at: {first_black_col}')
-
 while True:
-    sample = PrimusDataset.get_random_sample()
     plt.clf()
     plt.cla()
     plt.close()
     plt.axis('off')
-    tokens = sample.get_semantic_tokens()
-    if 'rest' not in tokens.pop() and 'rest' not in tokens.pop():
-        ImageProcessing.show_img(cv2.imread(sample.score_img))
+
+    sample = PrimusDataset.get_random_sample()
+    y, sr = librosa.load(sample.audio_wav_path, mono=True)
+    # S = librosa.stft(y, n_fft=n_fft, hop_length=hop_length, win_length=window_length)
+    S = librosa.feature.melspectrogram(y, sr=sr, n_fft=n_fft, hop_length=hop_length, win_length=window_length)
+    S_db = librosa.amplitude_to_db(S)
+    vmin = np.amin(S_db)
+    vmax = np.amax(S_db)
+    print(F'Minimmum value: {vmin}, Maximmum value: {vmax}')
+
+    img = librosa.display.specshow(S_db, fmin=fmin, fmax=fmax, x_axis='time', y_axis='mel',
+                                        hop_length=hop_length, vmin=-70, vmax=8)
+
+    # fig, ax = plt.subplots(nrows=2, ncols=1, sharex=True)
+    # img = librosa.display.specshow(S_db, fmin=fmin, fmax=fmax, x_axis='time', y_axis='mel',
+    #                                  hop_length=hop_length, cmap='gist_heat', vmin=-70, vmax=8, ax=ax[0])
+    # img = librosa.display.specshow(S_db, fmin=fmin, fmax=fmax, x_axis='time', y_axis='log',
+    #                                  hop_length=hop_length, cmap='gist_heat', vmin=-70, vmax=8, ax=ax[1])
+
+    # os.system(F'cvlc {sample.audio_wav_path}')
+    # plt.show()
+    img.figure.savefig('temp_img.png', bbox_inches='tight', pad_inches=0)
+    img = cv2.imread('temp_img.png')
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) 
+    downscale_ratio = img_height / img.shape[0]
+    img = cv2.resize(img, (math.ceil(img.shape[1] * downscale_ratio), img_height), interpolation=cv2.INTER_LANCZOS4)
+    img = np.expand_dims(img, axis=2)
+    img = img / 255
+
+    first_black_col = img.shape[1] - 1
+    for i in range(0, img.shape[1]):
+        column_is_black = True
+        for j in range(0, img_height):
+            if img[j][img.shape[1] - i - 1] != 0:
+                column_is_black = False
+                break
+        if column_is_black:
+            first_black_col = img.shape[1] - i - 1
+
+    img = img[:,0:first_black_col]
+
+    plt.clf()
+    plt.cla()
+    plt.close()
+    plt.axis('off')
+    ImageProcessing.show_img(cv2.imread(img))
+
+    #FALTA QUITAR LAS QUE ACABEN EN SILENCIOES (mirar 2 últimos tokens)
