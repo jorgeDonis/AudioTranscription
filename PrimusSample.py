@@ -43,6 +43,7 @@ class PrimusSample:
             self.audio_img_path     =   F'{base_filename}_spec.png'
         else:
             self.audio_img_path     =   'IMG_NOT_CREATED'
+        self.score_img              =   F'{base_filename}.png'
 
     def get_spectrogram_db(self):
         audio_time_series, achieved_sample_rate = librosa.load(self.audio_wav_path, mono=True)

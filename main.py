@@ -15,6 +15,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+import sys
+from PrimusSample import PrimusSample
 import tensorflow as tf
 import PrimusDataset
 import cv2
@@ -26,11 +28,12 @@ import Model
 import os
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
-activation_model, training_model = Model.get_activation_training_models()
-training_generator = PrimusDataset.train_generator()
-validation_generator_factory = PrimusDataset.val_generator_factory
+# activation_model, training_model = Model.get_activation_training_models()
+# training_generator = PrimusDataset.train_generator()
+# validation_generator_factory = PrimusDataset.val_generator_factory
 
-Model.train_model(training_model, activation_model, training_generator, validation_generator_factory)
+# Model.train_model(training_model, activation_model, training_generator, validation_generator_factory)
 
-model = tf.keras.models.load_model('cnn.h5')
-Model.test_all_images(model)
+model = tf.keras.models.load_model('cnn_muy_wena.h5')
+model.summary()
+# Model.test_all_images(model)
