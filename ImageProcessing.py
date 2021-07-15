@@ -18,6 +18,11 @@ import cv2
 import numpy as np
 
 import tensorflow as tf
+import matplotlib.pyplot as plt
+
+def show_img(img):
+    plt.imshow(img, cmap='gray')
+    plt.show()
 
 def preprocess_img(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) 

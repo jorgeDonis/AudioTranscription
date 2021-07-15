@@ -109,7 +109,9 @@ def _get_loss(model, val_generator):
     return total_loss / len(predictions)
 
 def train_model(train_model, act_model, input_generator, val_generator_factory, 
-                saved_model_filename="cnn.h5", training_history_filename="fit_histo.csv"):
+                saved_model_filename="cnn.h5", training_history_filename="fit_histo.csv",
+                max_no_epochs_without_improv=5):
+    no_epochs_without_improv = 0
     lowest_val_loss = float('inf')
     histo_file = open(training_history_filename, 'a')
     for i in range(0, PARAM['TRAINING']['EPOCHS']):

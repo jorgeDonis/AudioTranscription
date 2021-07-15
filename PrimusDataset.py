@@ -206,3 +206,7 @@ def validation_generator():
             images.clear()
             encodings.clear()
             i = 0
+
+def get_random_sample() -> PrimusSample:
+    rand_id = random.choice(get_all_primus_ids())
+    return PrimusSample(rand_id)
