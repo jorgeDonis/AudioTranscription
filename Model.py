@@ -125,9 +125,11 @@ def train_model(train_model, act_model, input_generator, val_generator_factory,
         histo_file.write(F"{i}, {batch_in_loss}, {batch_val_loss}\n")
         print(F"Validation loss: {batch_val_loss}")
         if batch_val_loss < lowest_val_loss:
+            lowest_val_loss = batch_val_loss
             act_model.save(saved_model_filename)
         else:
             no_epochs_without_improv += 1
+    histo_file.close()
 
 def _print_predicted_vs_true(predicted, true):
     max_len = max(len(predicted), len(true))
