@@ -16,18 +16,22 @@
 
 import cv2
 import numpy as np
-
+import math
 import tensorflow as tf
 import matplotlib.pyplot as plt
+from Parameters import Parameters as PARAM
 
 def show_img(img):
+    plt.clf()
+    plt.cla()
+    plt.close()
+    plt.axis('off')
     plt.imshow(img, cmap='gray')
     plt.show()
 
 def preprocess_img(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) 
     img = np.expand_dims(img, axis=2)
-    # img = cv2.resize(img, (img.shape[1] // 2, img.shape[0]), interpolation=cv2.INTER_LANCZOS4)
     img = img / 255
     return img
 
@@ -35,5 +39,7 @@ def preprocess_img(img):
 def pad_img_horizontal(img, max_img_len):
     return np.pad(img, ( (0, 0), (0, max_img_len - img.shape[1]), (0, 0) ), 'constant', constant_values= ( (0, 0), (0, 0), (0, 0) ))
 
-def preprocess_all_dataset(img):
-    return
+def process_img(img):
+    downscale_ratio = PARAM['SPEC']['IMG_HEIGHT'] / img.shape[0]
+    img = cv2.resize(img, (math.ceil(img.shape[1] * downscale_ratio), PARAM['SPEC']['IMG_HEIGHT']), interpolation=cv2.INTER_LANCZOS4)
+    return img

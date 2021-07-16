@@ -18,7 +18,6 @@ from Parameters import Parameters as PARAM
 import ImageProcessing
 
 import os
-import PIL
 
 import cv2
 import numpy as np
@@ -46,10 +45,10 @@ class PrimusSample:
         self.score_img              =   F'{base_filename}.png'
 
     def get_spectrogram_db(self):
-        audio_time_series, achieved_sample_rate = librosa.load(self.audio_wav_path, mono=True)
-        X = librosa.stft(audio_time_series, hop_length=PARAM['STFT']['HOP_LENGTH'], win_length=PARAM['STFT']['WIN_LENGTH'])
-        D = librosa.amplitude_to_db(np.abs(X), ref=np.max)
-        return D
+        y, sr = librosa.load(self.audio_wav_path, mono=True)
+        S = librosa.feature.melspectrogram(y, sr=sr, n_fft=PARAM['STFT']['N_FFT'], hop_length=PARAM['STFT']['HOP_LENGTH'], win_length=PARAM['STFT']['WIN_LENGTH'])
+        S_db = librosa.amplitude_to_db(S)
+        return S_db
 
     def get_semantic_tokens(self):
         tokens = open(self.score_semantic, 'r').readline().split('\t')
@@ -61,14 +60,14 @@ class PrimusSample:
         plt.cla()
         plt.close()
         plt.axis('off')
-        D = self.get_spectrogram_db()
-        img = librosa.display.specshow(D, x_axis='linear',
-                                	   hop_length=PARAM['STFT']['HOP_LENGTH'], y_axis=PARAM['SPEC']['Y_AXIS_SCALE'])
+        S_db = self.get_spectrogram_db()
+        img = librosa.display.specshow(S_db, fmin=PARAM['SPEC']['F_MIN'], fmax=PARAM['SPEC']['F_MAX'], x_axis='time', y_axis='mel',
+                                        hop_length=PARAM['STFT']['HOP_LENGTH'], vmin=PARAM['SPEC']['V_MIN'], vmax=PARAM['SPEC']['V_MAX'])
         img.figure.savefig(self.TEMP_IMG_FILENAME, bbox_inches='tight', pad_inches=0)
-        pil_image = PIL.Image.open(self.TEMP_IMG_FILENAME)
-        pil_image = pil_image.resize((D.shape[1] * PARAM['SPEC']['IMG_WIDTH_PER_FRAME'], PARAM['SPEC']['IMG_HEIGHT']), resample=PIL.Image.LANCZOS)
+        img = cv2.imread(self.TEMP_IMG_FILENAME)
+        img = ImageProcessing.process_img(img)
         filename = self.audio_wav_path.replace('.wav', '_spec.png')
-        pil_image.save(filename)
+        cv2.imwrite(filename, img)
         self.audio_img_path = filename
         os.system(F'rm {self.TEMP_IMG_FILENAME}')
 
