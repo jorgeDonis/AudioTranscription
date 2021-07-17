@@ -49,6 +49,10 @@ class SemanticTranslator:
 def get_all_primus_ids():
     return sorted(os.listdir('./Complete_Primus'))
 
+def all_primus_samples():
+    for id in get_all_primus_ids():
+        yield PrimusSample(id)
+
 def export_all_spectrograms(first_index = 0):
     ids = get_all_primus_ids()
     total_to_export = len(ids)

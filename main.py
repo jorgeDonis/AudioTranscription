@@ -32,20 +32,37 @@ import math
 
 # PrimusDataset.gen_train_test_ids(75000, 5000)
 
-# os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
+os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
-# activation_model, training_model = Model.get_activation_training_models()
-# training_generator = PrimusDataset.train_generator()
-# validation_generator_factory = PrimusDataset.val_generator_factory
+activation_model, training_model = Model.get_activation_training_models()
+training_generator = PrimusDataset.train_generator()
+validation_generator_factory = PrimusDataset.val_generator_factory
 
-# Model.train_model(training_model, activation_model, training_generator, validation_generator_factory)
+Model.train_model(training_model, activation_model, training_generator, validation_generator_factory)
 
-# model = tf.keras.models.load_model('cnn_muy_wena_replica.h5')
-# Model.test_all_images(model)
+# activation_model = tf.keras.models.load_model('cnn_muy_wena_replica.h5')
+Model.test_all_images(activation_model)
 
-sample = PrimusDataset.get_random_sample()
-sample.save_spectogram_into_dataset()
-print(sample.audio_img_path)
+# train_histo = [ line.replace('\n', '').replace(' ', '').split(',') for line in open('fit_histo_modelo_weno_replica.csv', 'r').readlines() ]
+# train_histo = [ [ float(epoch[1]), float(epoch[2]) ] for epoch in train_histo ] 
+# x = np.arange(1, 15, 1)
+# in_loss = np.array([ epoch[0] for epoch in train_histo ])
+# out_loss = np.array([ epoch[1] for epoch in train_histo ])
+
+# fig, ax1 = plt.subplots()
+# ax1.plot(x, in_loss, 'b')
+# ax1.set_xlabel('Epoch')
+# # Make the y-axis label, ticks and tick labels match the line color.
+# ax1.set_ylabel('CTC Loss', color='b')
+# ax1.tick_params('y', colors='b')
+
+# ax2 = ax1.twinx()
+# ax2.plot(x, out_loss, 'r')
+# ax2.set_ylabel('Edit distance', color='r')
+# ax2.tick_params('y', colors='r')
+
+# fig.tight_layout()
+# plt.show()
 
 # fmin = 27.5
 # fmax = 3520

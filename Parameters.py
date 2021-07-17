@@ -3,7 +3,7 @@ Parameters = {
     {
         'HOP_LENGTH'    :   128,
         'WIN_LENGTH'    :   1024,
-        'N_FFT'         :   1024
+        'N_FFT'         :   1024,
     },
     'SPEC' :
     {

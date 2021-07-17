@@ -17,7 +17,7 @@
 import os
 import sys
 from PrimusSample import PrimusSample
-from typing import List
+from typing import List, Tuple
 from Parameters import Parameters as PARAM
 import PrimusDataset
 
@@ -94,7 +94,7 @@ def _edit_distance(a: List, b: List) -> int:
     sm = edit_distance.SequenceMatcher(a, b)
     return sm.distance()
 
-def _get_loss(model, val_generator):
+def _predict_val_samples(model, val_generator) -> Tuple[List, List]:
     predictions = []
     true_encodings = []
     for batch_inputs, batch_encodings in val_generator:
@@ -102,6 +102,10 @@ def _get_loss(model, val_generator):
         for prediction, encoding in zip(batch_predictions, batch_encodings):
             predictions.append(_decode_softmax_indices(prediction))
             true_encodings.append(encoding)
+    return predictions, true_encodings
+
+def _get_loss(model, val_generator):
+    predictions, true_encodings = _predict_val_samples(model, val_generator)
     total_loss = 0
     for i in range(0, len(predictions)):
         l_d = _edit_distance(true_encodings[i], predictions[i])
