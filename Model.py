@@ -39,22 +39,23 @@ def _ctc_lambda_func(args):
 def get_activation_training_models():
     inputs = Layer.Input(shape=(PARAM['SPEC']['IMG_HEIGHT'], None, 1), name='padded_images')
 
-    conv_1_1 = Layer.Conv2D(64, (3,3), activation = 'gelu', padding='same')(inputs)
-    conv_1_2 = Layer.Dropout(0.2)(conv_1_1)
+    conv_1_1 = Layer.Conv2D(16, (2,10), activation = 'gelu', padding='same')(inputs)
+    dropout_1 = Layer.Dropout(0.2)(conv_1_1)
+    batch_norm_1 = Layer.BatchNormalization()(dropout_1)
+    pool_1 = Layer.MaxPool2D(pool_size=(2, 2))(batch_norm_1)
 
-    pool_1 = Layer.MaxPool2D(pool_size=(2, 2), strides=2)(conv_1_2)
-    conv_2 = Layer.Conv2D(64, (3,3), activation = 'gelu', padding='same')(pool_1)
-    batch_norm_1 = Layer.BatchNormalization()(conv_2)
-    pool_3 = Layer.MaxPool2D(pool_size=(2, 2))(batch_norm_1)
-    conv_4 = Layer.Conv2D(64, (3,3), activation = 'gelu', padding='same')(pool_3)
-    pool_4 = Layer.MaxPool2D(pool_size=(2, 2))(conv_4)
-    conv_5 = Layer.Conv2D(128, (3,3), activation='gelu', padding='same')(pool_4)
-    dropout = Layer.Dropout(0.2)(conv_5)
-    permute = Layer.Permute((2, 1, 3))(dropout)
-    reshape = Layer.Reshape((-1, 128 * PARAM['SPEC']['IMG_HEIGHT'] // PARAM['TRAINING']['POOLING_RATIO']))(permute)
-    blstm_1 = Layer.Bidirectional(Layer.LSTM(units = 128, input_shape=[None], return_sequences=True, dropout=0.2))(reshape)
+
+    conv_2 = Layer.Conv2D(32, (5,8), activation = 'gelu', padding='same')(pool_1)
+    dropout_2 = Layer.Dropout(0.2)(conv_2)
+    batch_norm_2 = Layer.BatchNormalization()(dropout_2)
+    pool_3 = Layer.MaxPool2D(pool_size=(2, 2))(batch_norm_2)
+
+    permute = Layer.Permute((2, 1, 3))(pool_3)
+    reshape = Layer.Reshape((-1, 32 * PARAM['SPEC']['IMG_HEIGHT'] // PARAM['TRAINING']['POOLING_RATIO']))(permute)
+
+    blstm_1 = Layer.Bidirectional(Layer.LSTM(units = 256, input_shape=[None], return_sequences=True, dropout=0.5))(reshape)
     batch_norm_2 = Layer.BatchNormalization()(blstm_1)
-    blstm_2 = Layer.Bidirectional(Layer.LSTM(units = 128, input_shape=[None], return_sequences=True, dropout=0.2))(batch_norm_2)
+    blstm_2 = Layer.Bidirectional(Layer.LSTM(units = 256, input_shape=[None], return_sequences=True, dropout=0.5))(batch_norm_2)
     outputs = Layer.Dense(semantic_translator.blank_class + 1, activation = 'softmax')(blstm_2)
     act_model = tf.keras.Model(inputs, outputs)
 

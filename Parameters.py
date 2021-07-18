@@ -15,8 +15,8 @@ Parameters = {
     },
     'TRAINING':
     {
-        'EPOCHS'        :   40,
-        'BATCH_SIZE'    :   2,
-        'POOLING_RATIO' :   8 # n^(number of poolings), where n is the size of the pooling in the x axis
+        'EPOCHS'        :   80,
+        'BATCH_SIZE'    :   8,
+        'POOLING_RATIO' :   4 # n^(number of poolings), where n is the size of the pooling in the x axis
     }
 }
