@@ -50,9 +50,9 @@ def get_activation_training_models():
     dropout = Layer.Dropout(0.4) (conv_4)
     permute = Layer.Permute((2, 1, 3))(dropout)
     reshape = Layer.Reshape((-1, 256 * PARAM['SPEC']['IMG_HEIGHT'] // PARAM['TRAINING']['POOLING_RATIO']))(permute)
-    blstm_1 = Layer.Bidirectional(Layer.LSTM(units = 192, input_shape=[None], return_sequences=True, dropout=0.3))(reshape)
+    blstm_1 = Layer.Bidirectional(Layer.LSTM(units = 256, input_shape=[None], return_sequences=True, dropout=0.3))(reshape)
     batch_norm_2 = Layer.BatchNormalization()(blstm_1)
-    blstm_2 = Layer.Bidirectional(Layer.LSTM(units = 192, input_shape=[None], return_sequences=True, dropout=0.3))(batch_norm_2)
+    blstm_2 = Layer.Bidirectional(Layer.LSTM(units = 256, input_shape=[None], return_sequences=True, dropout=0.3))(batch_norm_2)
     outputs = Layer.Dense(semantic_translator.blank_class + 1, activation = 'softmax')(blstm_2)
     act_model = tf.keras.Model(inputs, outputs)
 
