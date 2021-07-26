@@ -14,6 +14,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+import RythmFixer
 import os
 import sys
 from PrimusSample import PrimusSample
@@ -106,6 +107,9 @@ def _predict_val_samples(model, val_generator) -> Tuple[List, List]:
 
 def _get_loss(model, val_generator):
     predictions, true_encodings = _predict_val_samples(model, val_generator)
+    # prediction_strs = [ semantic_translator.decode_semantic_class_index_seq(x) for x in predictions ]
+    # prediction_strs = [ RythmFixer.fix_rythm(x) for x in prediction_strs ]
+    # predictions = [ semantic_translator.encode_semantic_token_seq(x) for x in  prediction_strs ]
     total_loss = 0
     for i in range(0, len(predictions)):
         l_d = _edit_distance(true_encodings[i], predictions[i])
@@ -151,9 +155,6 @@ def test_all_images(model):
         prediction = predict(model, sample)
         _print_predicted_vs_true(prediction, sample.get_semantic_tokens())
         sys.stdin.read(1)
-
-def test_all_images_postprocessing(model):
-    
 
 def predict(model, sample):
     img = sample.get_preprocesssed_img()

@@ -40,10 +40,10 @@ class SemanticTranslator:
     def decode_semantic_class_index(self, index : int) -> str:
         return self.semantic_array[index]
 
-    def encode_semantic_token_seq(self, token_seq) -> List:
+    def encode_semantic_token_seq(self, token_seq) -> List[int]:
         return [ self.encode_semantic_token(token) for token in token_seq ]
 
-    def decode_semantic_class_index_seq(self, class_index_seq) -> List:
+    def decode_semantic_class_index_seq(self, class_index_seq) -> List[str]:
         return [ self.decode_semantic_class_index(class_index) for class_index in class_index_seq ]
 
 def get_all_primus_ids():

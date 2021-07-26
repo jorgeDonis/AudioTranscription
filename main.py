@@ -20,6 +20,7 @@ import sys
 
 import librosa
 from numpy.core.fromnumeric import shape
+from numpy.lib.function_base import copy
 from PrimusSample import PrimusSample
 import tensorflow as tf
 import PrimusDataset
@@ -29,6 +30,7 @@ import Model
 import numpy as np
 import ImageProcessing
 import math
+import RythmFixer
 
 # PrimusDataset.gen_train_test_ids(75000, 5000)
 
@@ -44,9 +46,10 @@ activation_model = tf.keras.models.load_model('cnn_mel_0.41.h5')
 print(Model._get_loss(activation_model, validation_generator_factory()))
 # Model.test_all_images(activation_model)
 
-# train_histo = [ line.replace('\n', '').replace(' ', '').split(',') for line in open('fit_histo_modelo_weno_replica.csv', 'r').readlines() ]
+# train_histo = [ line.replace('\n', '').replace(' ', '').split(',') for line in open('fit_histo_mel_0.41.csv', 'r').readlines() ]
 # train_histo = [ [ float(epoch[1]), float(epoch[2]) ] for epoch in train_histo ] 
-# x = np.arange(1, 15, 1)
+# train_histo = train_histo[:13]
+# x = np.arange(1, len(train_histo) + 1, 1)
 # in_loss = np.array([ epoch[0] for epoch in train_histo ])
 # out_loss = np.array([ epoch[1] for epoch in train_histo ])
 
