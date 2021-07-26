@@ -34,14 +34,15 @@ import math
 
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
-activation_model, training_model = Model.get_activation_training_models()
-training_generator = PrimusDataset.train_generator()
+# activation_model, training_model = Model.get_activation_training_models()
+# training_generator = PrimusDataset.train_generator()
 validation_generator_factory = PrimusDataset.val_generator_factory
 
-Model.train_model(training_model, activation_model, training_generator, validation_generator_factory)
+# Model.train_model(training_model, activation_model, training_generator, validation_generator_factory)
 
-# activation_model = tf.keras.models.load_model('cnn_muy_wena_replica.h5')
-Model.test_all_images(activation_model)
+activation_model = tf.keras.models.load_model('cnn_mel_0.41.h5')
+print(Model._get_loss(activation_model, validation_generator_factory()))
+# Model.test_all_images(activation_model)
 
 # train_histo = [ line.replace('\n', '').replace(' ', '').split(',') for line in open('fit_histo_modelo_weno_replica.csv', 'r').readlines() ]
 # train_histo = [ [ float(epoch[1]), float(epoch[2]) ] for epoch in train_histo ] 
