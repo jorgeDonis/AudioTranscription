@@ -43,8 +43,15 @@ validation_generator_factory = PrimusDataset.val_generator_factory
 # Model.train_model(training_model, activation_model, training_generator, validation_generator_factory)
 
 activation_model = tf.keras.models.load_model('cnn_mel_0.41.h5')
-print(Model._get_loss(activation_model, validation_generator_factory()))
+# print(Model._get_loss(activation_model, validation_generator_factory()))
 # Model.test_all_images(activation_model)
+
+while True:
+    sample = PrimusDataset.get_random_sample()
+    original_prediction = Model.predict(activation_model, sample)
+    fixed_prediction = RythmFixer.fix_rythm(original_prediction)
+    Model._print_predicted_vs_true(fixed_prediction, original_prediction)
+
 
 # train_histo = [ line.replace('\n', '').replace(' ', '').split(',') for line in open('fit_histo_mel_0.41.csv', 'r').readlines() ]
 # train_histo = [ [ float(epoch[1]), float(epoch[2]) ] for epoch in train_histo ] 
